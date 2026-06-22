@@ -1,4 +1,12 @@
 node_modules/
 .next/
 .env*
+!.env.example
 .DS_Store
+
+# TypeScript
+next-env.d.ts
+*.tsbuildinfo
+
+# Test
+coverage/

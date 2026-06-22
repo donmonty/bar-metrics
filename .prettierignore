@@ -1,0 +1,8 @@
+.next/
+node_modules/
+package-lock.json
+next-env.d.ts
+
+# Design docs are hand-formatted prose (ADRs, glossary); don't let Prettier
+# reflow their intentional line breaks.
+docs/
