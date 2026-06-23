@@ -9,5 +9,8 @@ node_modules/
 next-env.d.ts
 *.tsbuildinfo
 
+# Generated Prisma client (regenerated via `prisma generate` / postinstall)
+/lib/db/app/generated/
+
 # Test
 coverage/
