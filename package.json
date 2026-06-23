@@ -5,15 +5,22 @@
   "description": "Dashboard + AI chatbot for nubebar bar managers",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "prisma generate",
+    "db:app:generate": "prisma generate",
+    "db:app:migrate:dev": "prisma migrate dev",
+    "db:app:migrate:deploy": "prisma migrate deploy",
+    "db:app:studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "next": "^15.5.19",
     "react": "19.1.0",
     "react-dom": "19.1.0"
@@ -23,10 +30,12 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.5.19",
     "eslint-config-prettier": "^10.0.0",
     "prettier": "^3.4.2",
+    "prisma": "^7.8.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.0"
   }

@@ -14,7 +14,13 @@ const eslintConfig = [
   // Keep ESLint focused on code quality; Prettier owns formatting.
   ...compat.extends("prettier"),
   {
-    ignores: [".next/**", "node_modules/**", "next-env.d.ts"],
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      // Generated Prisma client — regenerated on install, never hand-edited.
+      "lib/db/app/generated/**",
+    ],
   },
 ];
 

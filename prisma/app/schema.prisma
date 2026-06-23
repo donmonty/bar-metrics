@@ -1,0 +1,32 @@
+// App-owned (read-write) database — Neon free tier (ADR 0003).
+//
+// This is the app's SECOND Prisma schema/client. The read-only nubebar
+// read-model (issue #5) gets its own schema/client; the two never share a
+// generated client. The generated client lands under `lib/db/app/generated`
+// and must only be imported through the `lib/db/app` seam.
+//
+// Migrations connect via the DIRECT (unpooled) connection (`directUrl`);
+// application runtime connects via the pooled PgBouncer connection through the
+// `@prisma/adapter-pg` driver adapter wired up in `lib/db/app`.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../lib/db/app/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Minimal initial table so the migration pipeline is real and runnable
+/// (issue #4). The substantive app tables — Auth.js users/sessions (ADR 0002),
+/// chat conversations/messages (ADR 0001/0004) — arrive in later slices.
+/// Each row records a write to the app DB; the round-trip test and the
+/// `/health` readout both exercise it end to end.
+model HealthCheck {
+  id        String   @id @default(uuid())
+  note      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("health_checks")
+}
