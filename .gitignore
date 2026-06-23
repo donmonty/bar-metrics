@@ -11,6 +11,7 @@ next-env.d.ts
 
 # Generated Prisma client (regenerated via `prisma generate` / postinstall)
 /lib/db/app/generated/
+/lib/db/nubebar/generated/
 
 # Test
 coverage/

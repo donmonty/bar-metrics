@@ -1,0 +1,517 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../../lib/db/nubebar/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model auth_group {
+  id                     Int                      @id @default(autoincrement())
+  name                   String                   @unique @db.VarChar(150)
+  auth_group_permissions auth_group_permissions[]
+  core_user_groups       core_user_groups[]
+
+  @@index([name], map: "auth_group_name_a6ea08ec_like")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model auth_group_permissions {
+  id              Int             @id @default(autoincrement())
+  group_id        Int
+  permission_id   Int
+  auth_permission auth_permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "auth_group_permissio_permission_id_84c5c92e_fk_auth_perm")
+  auth_group      auth_group      @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "auth_group_permissions_group_id_b120cbf9_fk_auth_group_id")
+
+  @@unique([group_id, permission_id], map: "auth_group_permissions_group_id_permission_id_0cd325b0_uniq")
+  @@index([group_id], map: "auth_group_permissions_group_id_b120cbf9")
+  @@index([permission_id], map: "auth_group_permissions_permission_id_84c5c92e")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model auth_permission {
+  id                         Int                          @id @default(autoincrement())
+  name                       String                       @db.VarChar(255)
+  content_type_id            Int
+  codename                   String                       @db.VarChar(100)
+  auth_group_permissions     auth_group_permissions[]
+  django_content_type        django_content_type          @relation(fields: [content_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "auth_permission_content_type_id_2f476e4b_fk_django_co")
+  core_user_user_permissions core_user_user_permissions[]
+
+  @@unique([content_type_id, codename], map: "auth_permission_content_type_id_codename_01ab375a_uniq")
+  @@index([content_type_id], map: "auth_permission_content_type_id_2f476e4b")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model authtoken_token {
+  key       String    @id @db.VarChar(40)
+  created   DateTime  @db.Timestamptz(6)
+  user_id   Int       @unique
+  core_user core_user @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "authtoken_token_user_id_35299eff_fk_core_user_id")
+
+  @@index([key], map: "authtoken_token_key_10f0b77e_like")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_almacen {
+  id                    Int                     @id @default(autoincrement())
+  nombre                String                  @db.VarChar(255)
+  numero                Int
+  sucursal_id           Int
+  tipo                  String                  @db.VarChar(1)
+  core_sucursal         core_sucursal           @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_almacen_sucursal_id_3694c96c_fk_core_sucursal_id")
+  core_botella          core_botella[]
+  core_caja             core_caja[]
+  core_inspeccion       core_inspeccion[]
+  core_mermaingrediente core_mermaingrediente[]
+  core_reportemermas    core_reportemermas[]
+  core_traspaso         core_traspaso[]
+
+  @@index([sucursal_id], map: "core_almacen_sucursal_id_3694c96c")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_botella {
+  id                        Int                   @id @default(autoincrement())
+  folio                     String                @unique(map: "core_botella_folio_95aed98a_uniq") @db.VarChar(255)
+  tipo_marbete              String                @db.VarChar(255)
+  fecha_elaboracion_marbete String                @db.VarChar(255)
+  lote_produccion_marbete   String                @db.VarChar(255)
+  url                       String                @db.VarChar(255)
+  nombre_marca              String                @db.VarChar(255)
+  tipo_producto             String                @db.VarChar(255)
+  graduacion_alcoholica     String                @db.VarChar(255)
+  capacidad                 Int?
+  origen_del_producto       String                @db.VarChar(255)
+  fecha_importacion         String                @db.VarChar(255)
+  nombre_fabricante         String                @db.VarChar(255)
+  rfc_fabricante            String                @db.VarChar(255)
+  estado                    String                @db.VarChar(1)
+  fecha_registro            DateTime              @db.Timestamptz(6)
+  fecha_baja                DateTime?             @db.Timestamptz(6)
+  peso_cristal              Int?
+  peso_inicial              Int?
+  precio_unitario           Decimal?              @db.Decimal(8, 2)
+  almacen_id                Int?
+  producto_id               Int?
+  proveedor_id              Int?
+  sucursal_id               Int?
+  usuario_alta_id           Int?
+  categoria                 String                @db.VarChar(255)
+  ingrediente               String                @db.VarChar(255)
+  peso_actual               Int?
+  fecha_envasado            String                @db.VarChar(255)
+  lote_produccion           String                @db.VarChar(255)
+  numero_pedimento          String                @db.VarChar(255)
+  peso_nueva                Int?
+  sat_hash                  String                @unique(map: "core_botella_sat_hash_6f7ffd55_uniq") @db.VarChar(255)
+  core_almacen              core_almacen?         @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_botella_almacen_id_2dc3e498_fk_core_almacen_id")
+  core_producto             core_producto?        @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_botella_producto_id_264bae64_fk_core_producto_id")
+  core_proveedor            core_proveedor?       @relation(fields: [proveedor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_botella_proveedor_id_7194c3b4_fk_core_proveedor_id")
+  core_sucursal             core_sucursal?        @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_botella_sucursal_id_097f8e15_fk_core_sucursal_id")
+  core_user                 core_user?            @relation(fields: [usuario_alta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_botella_usuario_alta_id_ab642c44_fk_core_user_id")
+  core_iteminspeccion       core_iteminspeccion[]
+  core_traspaso             core_traspaso[]
+
+  @@index([almacen_id], map: "core_botella_almacen_id_2dc3e498")
+  @@index([folio], map: "core_botella_folio_95aed98a_like")
+  @@index([producto_id], map: "core_botella_producto_id_264bae64")
+  @@index([proveedor_id], map: "core_botella_proveedor_id_7194c3b4")
+  @@index([sat_hash], map: "core_botella_sat_hash_6f7ffd55_like")
+  @@index([sucursal_id], map: "core_botella_sucursal_id_097f8e15")
+  @@index([usuario_alta_id], map: "core_botella_usuario_alta_id_ab642c44")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_caja {
+  id           Int          @id @default(autoincrement())
+  numero       Int
+  nombre       String       @db.VarChar(255)
+  almacen_id   Int
+  core_almacen core_almacen @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_caja_almacen_id_62c5dbfc_fk_core_almacen_id")
+  core_venta   core_venta[]
+
+  @@index([almacen_id], map: "core_caja_almacen_id_62c5dbfc")
+}
+
+model core_categoria {
+  id               Int                @id @default(autoincrement())
+  nombre           String             @db.VarChar(255)
+  core_ingrediente core_ingrediente[]
+}
+
+model core_cliente {
+  id            Int             @id @default(autoincrement())
+  nombre        String          @db.VarChar(255)
+  razon_social  String          @db.VarChar(255)
+  rfc           String          @db.VarChar(13)
+  direccion     String
+  ciudad        String          @db.VarChar(255)
+  core_sucursal core_sucursal[]
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_consumorecetavendida {
+  id               Int              @id @default(autoincrement())
+  fecha            DateTime         @db.Date
+  volumen          Int
+  ingrediente_id   Int
+  receta_id        Int
+  venta_id         Int
+  core_ingrediente core_ingrediente @relation(fields: [ingrediente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_consumorecetave_ingrediente_id_de8a643c_fk_core_ingr")
+  core_receta      core_receta      @relation(fields: [receta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_consumorecetavendida_receta_id_2b897d91_fk_core_receta_id")
+  core_venta       core_venta       @relation(fields: [venta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_consumorecetavendida_venta_id_f6358457_fk_core_venta_id")
+
+  @@index([ingrediente_id], map: "core_consumorecetavendida_ingrediente_id_de8a643c")
+  @@index([receta_id], map: "core_consumorecetavendida_receta_id_2b897d91")
+  @@index([venta_id], map: "core_consumorecetavendida_venta_id_f6358457")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_ingrediente {
+  id                        Int                         @id @default(autoincrement())
+  codigo                    String                      @unique @db.VarChar(255)
+  nombre                    String                      @db.VarChar(255)
+  factor_peso               Decimal?                    @db.Decimal(3, 2)
+  categoria_id              Int
+  core_consumorecetavendida core_consumorecetavendida[]
+  core_categoria            core_categoria              @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_ingrediente_categoria_id_b7df5cf7_fk_core_categoria_id")
+  core_ingredientereceta    core_ingredientereceta[]
+  core_mermaingrediente     core_mermaingrediente[]
+  core_producto             core_producto[]
+
+  @@index([categoria_id], map: "core_ingrediente_categoria_id_b7df5cf7")
+  @@index([codigo], map: "core_ingrediente_codigo_22261008_like")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_ingredientereceta {
+  id               Int              @id @default(autoincrement())
+  volumen          Int
+  ingrediente_id   Int
+  receta_id        Int
+  core_ingrediente core_ingrediente @relation(fields: [ingrediente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_ingredienterece_ingrediente_id_9ad47c53_fk_core_ingr")
+  core_receta      core_receta      @relation(fields: [receta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_ingredientereceta_receta_id_3175db1d_fk_core_receta_id")
+
+  @@unique([receta_id, ingrediente_id], map: "core_ingredientereceta_receta_id_ingrediente_id_e668a575_uniq")
+  @@index([ingrediente_id], map: "core_ingredientereceta_ingrediente_id_9ad47c53")
+  @@index([receta_id], map: "core_ingredientereceta_receta_id_3175db1d")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_inspeccion {
+  id                                                     Int                   @id @default(autoincrement())
+  fecha_alta                                             DateTime              @db.Date
+  timestamp_alta                                         DateTime              @db.Timestamptz(6)
+  estado                                                 String                @db.VarChar(1)
+  almacen_id                                             Int
+  sucursal_id                                            Int
+  usuario_alta_id                                        Int?
+  usuario_cierre_id                                      Int?
+  fecha_update                                           DateTime              @db.Date
+  timestamp_update                                       DateTime              @db.Timestamptz(6)
+  tipo                                                   String                @db.VarChar(1)
+  core_almacen                                           core_almacen          @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_inspeccion_almacen_id_6d563d33_fk_core_almacen_id")
+  core_sucursal                                          core_sucursal         @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_inspeccion_sucursal_id_9cffe3d9_fk_core_sucursal_id")
+  core_user_core_inspeccion_usuario_alta_idTocore_user   core_user?            @relation("core_inspeccion_usuario_alta_idTocore_user", fields: [usuario_alta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_inspeccion_usuario_alta_id_3b9b744e_fk_core_user_id")
+  core_user_core_inspeccion_usuario_cierre_idTocore_user core_user?            @relation("core_inspeccion_usuario_cierre_idTocore_user", fields: [usuario_cierre_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_inspeccion_usuario_cierre_id_ff39b5ad_fk_core_user_id")
+  core_iteminspeccion                                    core_iteminspeccion[]
+  core_reportemermas                                     core_reportemermas[]
+
+  @@index([almacen_id], map: "core_inspeccion_almacen_id_6d563d33")
+  @@index([sucursal_id], map: "core_inspeccion_sucursal_id_9cffe3d9")
+  @@index([usuario_alta_id], map: "core_inspeccion_usuario_alta_id_3b9b744e")
+  @@index([usuario_cierre_id], map: "core_inspeccion_usuario_cierre_id_ff39b5ad")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_iteminspeccion {
+  id                   Int             @id @default(autoincrement())
+  peso_botella         Int?
+  timestamp_inspeccion DateTime        @db.Timestamptz(6)
+  botella_id           Int
+  inspeccion_id        Int
+  inspeccionado        Boolean
+  core_botella         core_botella    @relation(fields: [botella_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_iteminspeccion_botella_id_e6dd5d42_fk_core_botella_id")
+  core_inspeccion      core_inspeccion @relation(fields: [inspeccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_iteminspeccion_inspeccion_id_726f68e6_fk_core_insp")
+
+  @@index([botella_id], map: "core_iteminspeccion_botella_id_e6dd5d42")
+  @@index([inspeccion_id], map: "core_iteminspeccion_inspeccion_id_726f68e6")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_mermaingrediente {
+  id                 Int                 @id @default(autoincrement())
+  fecha_inicial      DateTime?           @db.Date
+  fecha_final        DateTime?           @db.Date
+  consumo_ventas     Decimal?            @db.Decimal(8, 2)
+  consumo_real       Decimal?            @db.Decimal(8, 2)
+  merma              Decimal?            @db.Decimal(8, 2)
+  porcentaje         Decimal?            @db.Decimal(8, 2)
+  almacen_id         Int
+  ingrediente_id     Int
+  reporte_id         Int?
+  core_ingrediente   core_ingrediente    @relation(fields: [ingrediente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_mermaingredient_ingrediente_id_8824bd5f_fk_core_ingr")
+  core_reportemermas core_reportemermas? @relation(fields: [reporte_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_mermaingredient_reporte_id_a57fdbba_fk_core_repo")
+  core_almacen       core_almacen        @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_mermaingrediente_almacen_id_cefa3d57_fk_core_almacen_id")
+
+  @@index([almacen_id], map: "core_mermaingrediente_almacen_id_cefa3d57")
+  @@index([ingrediente_id], map: "core_mermaingrediente_ingrediente_id_8824bd5f")
+  @@index([reporte_id], map: "core_mermaingrediente_reporte_id_a57fdbba")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_producto {
+  id                        Int              @id @default(autoincrement())
+  folio                     String           @db.VarChar(12)
+  tipo_marbete              String           @db.VarChar(255)
+  fecha_elaboracion_marbete String           @db.VarChar(255)
+  lote_produccion_marbete   String           @db.VarChar(255)
+  url                       String           @db.VarChar(255)
+  nombre_marca              String           @db.VarChar(255)
+  tipo_producto             String           @db.VarChar(255)
+  graduacion_alcoholica     String           @db.VarChar(255)
+  capacidad                 Int?
+  origen_del_producto       String           @db.VarChar(255)
+  fecha_importacion         String           @db.VarChar(255)
+  nombre_fabricante         String           @db.VarChar(255)
+  rfc_fabricante            String           @db.VarChar(255)
+  fecha_registro            DateTime         @db.Timestamptz(6)
+  peso_cristal              Int?
+  precio_unitario           Decimal?         @db.Decimal(8, 2)
+  ingrediente_id            Int
+  fecha_envasado            String           @db.VarChar(255)
+  lote_produccion           String           @db.VarChar(255)
+  numero_pedimento          String           @db.VarChar(255)
+  peso_nueva                Int?
+  codigo_barras             String           @db.VarChar(255)
+  core_botella              core_botella[]
+  core_ingrediente          core_ingrediente @relation(fields: [ingrediente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_producto_ingrediente_id_5825ae10_fk_core_ingrediente_id")
+
+  @@index([ingrediente_id], map: "core_producto_ingrediente_id_5825ae10")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_productosinregistro {
+  id            Int           @id @default(autoincrement())
+  sucursal_id   Int
+  codigo_pos    String        @db.VarChar(255)
+  caja          Int?
+  nombre        String        @db.VarChar(255)
+  fecha         DateTime?     @db.Date
+  importe       Int?
+  unidades      Int?
+  core_sucursal core_sucursal @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_productosinregi_sucursal_id_70e53b97_fk_core_sucu")
+
+  @@index([sucursal_id], map: "core_productosinregistro_sucursal_id_70e53b97")
+}
+
+model core_proveedor {
+  id           Int            @id @default(autoincrement())
+  nombre       String         @db.VarChar(255)
+  razon_social String         @db.VarChar(255)
+  rfc          String         @db.VarChar(13)
+  direccion    String
+  ciudad       String         @db.VarChar(255)
+  core_botella core_botella[]
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_receta {
+  id                        Int                         @id @default(autoincrement())
+  codigo_pos                String                      @db.VarChar(255)
+  nombre                    String                      @db.VarChar(255)
+  sucursal_id               Int
+  core_consumorecetavendida core_consumorecetavendida[]
+  core_ingredientereceta    core_ingredientereceta[]
+  core_sucursal             core_sucursal               @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_receta_sucursal_id_ed1eff41_fk_core_sucursal_id")
+  core_venta                core_venta[]
+
+  @@index([sucursal_id], map: "core_receta_sucursal_id_ed1eff41")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_reportemermas {
+  id                    Int                     @id @default(autoincrement())
+  fecha_registro        DateTime                @db.Date
+  fecha_inicial         DateTime?               @db.Date
+  fecha_final           DateTime?               @db.Date
+  almacen_id            Int
+  inspeccion_id         Int
+  core_mermaingrediente core_mermaingrediente[]
+  core_almacen          core_almacen            @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_reportemermas_almacen_id_fa96fc47_fk_core_almacen_id")
+  core_inspeccion       core_inspeccion         @relation(fields: [inspeccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_reportemermas_inspeccion_id_b44912b6_fk_core_inspeccion_id")
+
+  @@index([almacen_id], map: "core_reportemermas_almacen_id_fa96fc47")
+  @@index([inspeccion_id], map: "core_reportemermas_inspeccion_id_b44912b6")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_sucursal {
+  id                       Int                        @id @default(autoincrement())
+  nombre                   String                     @db.VarChar(255)
+  razon_social             String                     @db.VarChar(255)
+  rfc                      String                     @db.VarChar(13)
+  direccion                String
+  ciudad                   String                     @db.VarChar(255)
+  latitud                  Decimal?                   @db.Decimal(9, 3)
+  longitud                 Decimal?                   @db.Decimal(9, 3)
+  codigo_postal            String                     @db.VarChar(5)
+  cliente_id               Int
+  slug                     String                     @db.VarChar(255)
+  core_almacen             core_almacen[]
+  core_botella             core_botella[]
+  core_inspeccion          core_inspeccion[]
+  core_productosinregistro core_productosinregistro[]
+  core_receta              core_receta[]
+  core_cliente             core_cliente               @relation(fields: [cliente_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_sucursal_cliente_id_8712f9fd_fk_core_cliente_id")
+  core_traspaso            core_traspaso[]
+  core_user_sucursales     core_user_sucursales[]
+  core_venta               core_venta[]
+
+  @@index([cliente_id], map: "core_sucursal_cliente_id_8712f9fd")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_traspaso {
+  id            Int           @id @default(autoincrement())
+  fecha         DateTime      @db.Timestamptz(6)
+  almacen_id    Int
+  botella_id    Int
+  sucursal_id   Int
+  usuario_id    Int?
+  core_almacen  core_almacen  @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_traspaso_almacen_id_9cb50211_fk_core_almacen_id")
+  core_botella  core_botella  @relation(fields: [botella_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_traspaso_botella_id_f87fcf53_fk_core_botella_id")
+  core_sucursal core_sucursal @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_traspaso_sucursal_id_37a19762_fk_core_sucursal_id")
+  core_user     core_user?    @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_traspaso_usuario_id_ddc2c269_fk_core_user_id")
+
+  @@index([almacen_id], map: "core_traspaso_almacen_id_9cb50211")
+  @@index([botella_id], map: "core_traspaso_botella_id_f87fcf53")
+  @@index([sucursal_id], map: "core_traspaso_sucursal_id_37a19762")
+  @@index([usuario_id], map: "core_traspaso_usuario_id_ddc2c269")
+}
+
+model core_user {
+  id                                                           Int                          @id @default(autoincrement())
+  password                                                     String                       @db.VarChar(128)
+  last_login                                                   DateTime?                    @db.Timestamptz(6)
+  is_superuser                                                 Boolean
+  email                                                        String                       @unique @db.VarChar(255)
+  name                                                         String                       @db.VarChar(255)
+  is_active                                                    Boolean
+  is_staff                                                     Boolean
+  authtoken_token                                              authtoken_token?
+  core_botella                                                 core_botella[]
+  core_inspeccion_core_inspeccion_usuario_alta_idTocore_user   core_inspeccion[]            @relation("core_inspeccion_usuario_alta_idTocore_user")
+  core_inspeccion_core_inspeccion_usuario_cierre_idTocore_user core_inspeccion[]            @relation("core_inspeccion_usuario_cierre_idTocore_user")
+  core_traspaso                                                core_traspaso[]
+  core_user_groups                                             core_user_groups[]
+  core_user_sucursales                                         core_user_sucursales[]
+  core_user_user_permissions                                   core_user_user_permissions[]
+  django_admin_log                                             django_admin_log[]
+
+  @@index([email], map: "core_user_email_92a71487_like")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_user_groups {
+  id         Int        @id @default(autoincrement())
+  user_id    Int
+  group_id   Int
+  auth_group auth_group @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_user_groups_group_id_fe8c697f_fk_auth_group_id")
+  core_user  core_user  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_user_groups_user_id_70b4d9b8_fk_core_user_id")
+
+  @@unique([user_id, group_id], map: "core_user_groups_user_id_group_id_c82fcad1_uniq")
+  @@index([group_id], map: "core_user_groups_group_id_fe8c697f")
+  @@index([user_id], map: "core_user_groups_user_id_70b4d9b8")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_user_sucursales {
+  id            Int           @id @default(autoincrement())
+  user_id       Int
+  sucursal_id   Int
+  core_sucursal core_sucursal @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_user_sucursales_sucursal_id_9f629daa_fk_core_sucursal_id")
+  core_user     core_user     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_user_sucursales_user_id_fe58be02_fk_core_user_id")
+
+  @@unique([user_id, sucursal_id], map: "core_user_sucursales_user_id_sucursal_id_9596a3e9_uniq")
+  @@index([sucursal_id], map: "core_user_sucursales_sucursal_id_9f629daa")
+  @@index([user_id], map: "core_user_sucursales_user_id_fe58be02")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_user_user_permissions {
+  id              Int             @id @default(autoincrement())
+  user_id         Int
+  permission_id   Int
+  auth_permission auth_permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_user_user_permi_permission_id_35ccf601_fk_auth_perm")
+  core_user       core_user       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_user_user_permissions_user_id_085123d3_fk_core_user_id")
+
+  @@unique([user_id, permission_id], map: "core_user_user_permissions_user_id_permission_id_73ea0daa_uniq")
+  @@index([permission_id], map: "core_user_user_permissions_permission_id_35ccf601")
+  @@index([user_id], map: "core_user_user_permissions_user_id_085123d3")
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model core_venta {
+  id                        Int                         @id @default(autoincrement())
+  fecha                     DateTime                    @db.Date
+  unidades                  Int
+  importe                   Int
+  caja_id                   Int
+  receta_id                 Int
+  sucursal_id               Int
+  core_consumorecetavendida core_consumorecetavendida[]
+  core_caja                 core_caja                   @relation(fields: [caja_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_venta_caja_id_6d07687b_fk_core_caja_id")
+  core_receta               core_receta                 @relation(fields: [receta_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_venta_receta_id_60f49648_fk_core_receta_id")
+  core_sucursal             core_sucursal               @relation(fields: [sucursal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "core_venta_sucursal_id_922eafdc_fk_core_sucursal_id")
+
+  @@index([caja_id], map: "core_venta_caja_id_6d07687b")
+  @@index([receta_id], map: "core_venta_receta_id_60f49648")
+  @@index([sucursal_id], map: "core_venta_sucursal_id_922eafdc")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model django_admin_log {
+  id                  Int                  @id @default(autoincrement())
+  action_time         DateTime             @db.Timestamptz(6)
+  object_id           String?
+  object_repr         String               @db.VarChar(200)
+  action_flag         Int                  @db.SmallInt
+  change_message      String
+  content_type_id     Int?
+  user_id             Int
+  django_content_type django_content_type? @relation(fields: [content_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "django_admin_log_content_type_id_c4bce8eb_fk_django_co")
+  core_user           core_user            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "django_admin_log_user_id_c564eba6_fk_core_user_id")
+
+  @@index([content_type_id], map: "django_admin_log_content_type_id_c4bce8eb")
+  @@index([user_id], map: "django_admin_log_user_id_c564eba6")
+}
+
+model django_content_type {
+  id               Int                @id @default(autoincrement())
+  app_label        String             @db.VarChar(100)
+  model            String             @db.VarChar(100)
+  auth_permission  auth_permission[]
+  django_admin_log django_admin_log[]
+
+  @@unique([app_label, model], map: "django_content_type_app_label_model_76bd3d3b_uniq")
+}
+
+model django_migrations {
+  id      Int      @id @default(autoincrement())
+  app     String   @db.VarChar(255)
+  name    String   @db.VarChar(255)
+  applied DateTime @db.Timestamptz(6)
+}
+
+model django_session {
+  session_key  String   @id @db.VarChar(40)
+  session_data String
+  expire_date  DateTime @db.Timestamptz(6)
+
+  @@index([expire_date], map: "django_session_expire_date_a5c62663")
+  @@index([session_key], map: "django_session_session_key_c0390e0f_like")
+}
