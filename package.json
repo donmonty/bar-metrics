@@ -5,18 +5,20 @@
   "description": "Dashboard + AI chatbot for nubebar bar managers",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma generate --config prisma.nubebar.config.ts && next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && prisma generate --config prisma.nubebar.config.ts",
     "db:app:generate": "prisma generate",
     "db:app:migrate:dev": "prisma migrate dev",
     "db:app:migrate:deploy": "prisma migrate deploy",
-    "db:app:studio": "prisma studio"
+    "db:app:studio": "prisma studio",
+    "db:nubebar:pull": "prisma db pull --config prisma.nubebar.config.ts",
+    "db:nubebar:generate": "prisma generate --config prisma.nubebar.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
