@@ -8,10 +8,22 @@
  * (issues #4/#5): this module is for "who is signed in and what scope they
  * have," not "what lives in the database."
  *
- * `session.user.sucursalIds` is always `[]` in this slice — the typed shape
- * is locked in now so Step 3's dashboard can already depend on it, but the
- * population logic (the `UserSucursal` join table + `assignSucursales`
- * helper) is Slice 2 (issue #12). Nothing here reads the nubebar read model.
+ * `session.user.sucursalIds` was always `[]` through Slice 1 — the typed
+ * shape was locked in early so Step 3's dashboard could already depend on
+ * it. Slice 2 (issue #12) populates it for real: `assignSucursales` (below)
+ * writes `UserSucursal` rows, and this module's `session` callback override
+ * reads them back on every session resolution.
+ *
+ * **Why the `session` callback lives here, not in the shared
+ * `lib/auth/config.ts`:** with the JWT strategy, `session()` still runs
+ * server-side on every `auth()` call in the Node runtime (route handlers,
+ * server components) — it is a DB read, not a token decode. `config.ts`'s
+ * stub (`sucursalIds = []`) stays in place for the Edge-safe half
+ * (`lib/auth/edge.ts`, used only by `middleware.ts`), which must never touch
+ * `pg`. This gives downstream code fresh-per-request `sucursalIds` without a
+ * new sign-in, matching the PRD's "re-assigning and re-resolving the Session
+ * yields the new list" expectation more closely than baking the list into
+ * the JWT at mint time (`jwt()`) would.
  *
  * **Divergence from the PRD's suggested default (documented, one-line
  * justification invited by the PRD itself):** sessions use the **JWT**
@@ -36,6 +48,7 @@ import Resend from "next-auth/providers/resend";
 
 import { authConfig } from "./config";
 import { getAppDb, isAppDbConfigured } from "@/lib/db/app";
+import { findExistingSucursalIds } from "@/lib/db/nubebar";
 
 /** Whether Auth.js has its required session-encryption secret configured. */
 export function isAuthConfigured(): boolean {
@@ -47,6 +60,60 @@ export function isResendConfigured(): boolean {
   return (
     Boolean(process.env.AUTH_RESEND_KEY) && Boolean(process.env.AUTH_EMAIL_FROM)
   );
+}
+
+/** Reads the Sucursal IDs currently assigned to a User (issue #12). */
+async function getSucursalIdsForUser(userId: string): Promise<number[]> {
+  const rows = await getAppDb().userSucursal.findMany({
+    where: { userId },
+    select: { sucursalId: true },
+  });
+  return rows.map((row) => row.sucursalId);
+}
+
+/**
+ * Replaces the set of Sucursales a User (by email) is scoped to (issue #12).
+ * Idempotent — delete-missing/insert-new/leave-overlap-untouched semantics —
+ * and pre-creates the `User` row if the email hasn't signed in yet, so an
+ * operator can authorize a fresh email before its first magic-link sign-in.
+ *
+ * Every `sucursalId` is validated against the live nubebar read model first;
+ * a non-existent ID throws before any row is written. This is the only
+ * place downstream code (the seed script, any future admin UI) writes
+ * `UserSucursal` — it never touches `lib/db/app`'s generated client itself.
+ */
+export async function assignSucursales(
+  email: string,
+  sucursalIds: number[],
+): Promise<void> {
+  const existingIds = await findExistingSucursalIds(sucursalIds);
+  const missingIds = sucursalIds.filter((id) => !existingIds.includes(id));
+  if (missingIds.length > 0) {
+    throw new Error(
+      `Cannot assign unknown Sucursal ID(s) to ${email}: ${missingIds.join(", ")}. ` +
+        "Check the IDs against the nubebar read model (e.g. Prisma Studio on lib/db/nubebar).",
+    );
+  }
+
+  const db = getAppDb();
+  const user = await db.user.upsert({
+    where: { email },
+    update: {},
+    create: { email },
+  });
+
+  await db.$transaction([
+    db.userSucursal.deleteMany({
+      where: { userId: user.id, sucursalId: { notIn: sucursalIds } },
+    }),
+    ...sucursalIds.map((sucursalId) =>
+      db.userSucursal.upsert({
+        where: { userId_sucursalId: { userId: user.id, sucursalId } },
+        update: {},
+        create: { userId: user.id, sucursalId },
+      }),
+    ),
+  ]);
 }
 
 // The adapter is constructed lazily, inside the config callback below,
@@ -63,6 +130,15 @@ const { handlers, auth, signIn, signOut } = NextAuth(() => ({
     }),
   ],
   adapter: isAppDbConfigured() ? PrismaAdapter(getAppDb()) : undefined,
+  callbacks: {
+    ...authConfig.callbacks,
+    async session({ session, token }) {
+      session.user.sucursalIds = token.sub
+        ? await getSucursalIdsForUser(token.sub)
+        : [];
+      return session;
+    },
+  },
 }));
 
 export { handlers, auth, signIn, signOut };

@@ -211,6 +211,103 @@ seeded user resolves to a typed session with `sucursalIds: []`) without
 sending an actual email — it's skipped when `DATABASE_URL` or `AUTH_SECRET`
 is absent, same pattern as Step 1's DB tests.
 
+## Sucursal scoping (ADR 0002, issue #12)
+
+Bar managers are scoped to one or more Sucursales via the **`UserSucursal`**
+join table on the app DB. There is no admin UI yet — assignment is a
+**dev-only CLI script** the operator runs from their machine.
+
+- **Schema:** `UserSucursal(userId, sucursalId, assignedAt)` in
+  [`prisma/app/schema.prisma`](prisma/app/schema.prisma), added via its own
+  migration (separate from Slice 1's Auth.js tables). `sucursalId` mirrors
+  `core_sucursal.id` in the nubebar read model with **no cross-DB foreign
+  key** — the two databases stay independent (ADR 0003); validity is checked
+  in application code instead.
+- **Seam:** [`lib/auth.assignSucursales(email, sucursalIds)`](lib/auth/index.ts)
+  — idempotent replace-set semantics, pre-creates the `User` row if the
+  email hasn't signed in yet, and validates every ID against the live
+  nubebar read model (`lib/db/nubebar.findExistingSucursalIds`) before
+  writing anything.
+- **Session enrichment:** the `session` callback in `lib/auth/index.ts`
+  (not the shared Edge-safe `lib/auth/config.ts`) reads `UserSucursal` on
+  every session resolution, so re-assigning and reloading the page reflects
+  the new list immediately — no new sign-in required. See that file's top
+  comment for why it has to live there given the JWT session strategy.
+
+### Create a test User and assign Sucursales locally
+
+```bash
+# 1. Find a real Sucursal ID from the live nubebar data, e.g. via Prisma Studio:
+npm run db:nubebar:generate && npx prisma studio --schema prisma/nubebar/schema.prisma
+# (or query lib/db/nubebar.findExistingSucursalIds / countSucursales directly)
+
+# 2. Assign it to a test email — pre-creates the User row if it doesn't exist yet:
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 1
+
+# 3. Sign in as that email via /login (see "Testing the login flow end to end"
+#    above) and confirm /me shows "Sucursal IDs: [1]".
+
+# 4. Re-run with a different set — the next sign-in (or page reload, since the
+#    session callback re-reads on every resolution) reflects the change:
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 1,2
+
+# 5. Re-running with the same set is a no-op (no duplicate rows):
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 1,2
+
+# 6. A non-existent Sucursal ID fails fast, before any row is written:
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 999999
+```
+
+The real-DB integration test
+([`lib/auth/sucursal-scoping.test.ts`](lib/auth/sucursal-scoping.test.ts))
+covers this end to end against the live Neon app DB and the live nubebar
+read model: assignment, idempotency, re-assignment, the unknown-ID rejection,
+and the unauthenticated-`null` case. It's skipped when `DATABASE_URL`,
+`AUTH_SECRET`, or `NUBEBAR_DATABASE_URL` is absent and does not require
+Resend env.
+
+### Assigning Sucursales against PRODUCTION
+
+`npm run db:app:assign-sucursales` always uses whatever's in your local
+`.env.local` — fine for local development, but **wrong** for onboarding a
+real bar manager, since that needs to write to the production Neon DB.
+[`scripts/assign-sucursales-prod.sh`](scripts/assign-sucursales-prod.sh) is a
+wrapper for that case, safe to run by hand or by an agent:
+
+```bash
+npm run db:app:assign-sucursales:prod -- --email real.manager@example.com --sucursales 1,2
+
+# or, non-interactively (no confirmation prompt — for agents/automation):
+npm run db:app:assign-sucursales:prod -- --yes --email real.manager@example.com --sucursales 1,2
+```
+
+What it does:
+
+1. Pulls fresh production env vars into `.env.production.local` via
+   `vercel env pull --environment=production` if that file doesn't already
+   exist — it never touches your `.env.local`.
+2. Prints the production app-DB host it's about to write to and the args
+   it's about to run with, then asks for an explicit `yes` before doing
+   anything — pass `--yes` to skip the prompt for non-interactive use.
+3. Runs `scripts/assign-sucursales.ts` with the production env vars
+   exported for just that one process — your shell's ambient environment
+   (and `.env.local`) are untouched once it exits.
+
+It writes directly to the production database with no dry-run mode, so
+double-check the email and Sucursal IDs before confirming.
+`.env.production.local` is gitignored (`.env*` is, except `.env.example`) —
+delete it (`rm .env.production.local`) once you're done if you'd rather not
+have production credentials sitting on disk between uses.
+
+**Before relying on this:** confirm Production and Development actually
+point at _different_ Neon databases in the Vercel dashboard (Project →
+Settings → Environment Variables → `DATABASE_URL`, filtered by
+environment). If the Neon store was provisioned as a single database shared
+across Production/Preview/Development (the default for the free tier unless
+branching was set up explicitly), this script will just write to the same
+database `npm run db:app:assign-sucursales` already does, and the "if it
+doesn't already exist" pull step still runs harmlessly either way.
+
 ## Deployment (Vercel)
 
 Hosted on [Vercel](https://vercel.com) (see

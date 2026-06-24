@@ -62,6 +62,23 @@ export async function countSucursales(): Promise<number> {
   return getClient().core_sucursal.count();
 }
 
+/**
+ * Of the given Sucursal IDs, returns the subset that actually exist in the
+ * nubebar read model (issue #12). `lib/auth.assignSucursales` uses this to
+ * validate IDs before writing `UserSucursal` rows — any ID missing from the
+ * returned set is a typo and should fail the assignment before any writes.
+ */
+export async function findExistingSucursalIds(
+  ids: number[],
+): Promise<number[]> {
+  if (ids.length === 0) return [];
+  const rows = await getClient().core_sucursal.findMany({
+    where: { id: { in: ids } },
+    select: { id: true },
+  });
+  return rows.map((row) => row.id).filter((id): id is number => id !== null);
+}
+
 /** Result of probing the nubebar read model for the `/health` readout. */
 export type NubebarDbHealth =
   | { configured: false }
