@@ -34,8 +34,10 @@ model HealthCheck {
 /// Auth.js v5 standard schema (issue #11 / ADR 0002), shaped per
 /// `@auth/prisma-adapter`'s spec. `sucursalIds` is NOT stored here — it is
 /// computed per-session by the `lib/auth` session callback from the
-/// `UserSucursal` join table, which Slice 2 (#12) introduces. Database
-/// sessions (the adapter's default) are used, not JWT sessions.
+/// `UserSucursal` join table, which Slice 2 (#12) introduces. Sessions use
+/// the JWT strategy, not the adapter's database-session default (see
+/// `lib/auth/index.ts`'s top comment for why) — these tables still exist so
+/// the adapter can persist `User`/`Account`/`VerificationToken` rows.
 model User {
   id            String    @id @default(uuid())
   name          String?
@@ -43,8 +45,9 @@ model User {
   emailVerified DateTime? @map("email_verified")
   image         String?
 
-  accounts Account[]
-  sessions Session[]
+  accounts       Account[]
+  sessions       Session[]
+  userSucursales UserSucursal[]
 
   @@map("users")
 }
@@ -85,4 +88,20 @@ model VerificationToken {
 
   @@id([identifier, token])
   @@map("verification_tokens")
+}
+
+/// Sucursal scoping (issue #12 / ADR 0002): which Sucursales a User can see.
+/// `sucursalId` mirrors `core_sucursal.id` in the nubebar read model, but
+/// deliberately has NO cross-DB foreign key — the two databases stay
+/// independent (ADR 0003). Validity is checked in application code
+/// (`lib/auth.assignSucursales`) against `lib/db/nubebar` at assignment time.
+model UserSucursal {
+  userId     String   @map("user_id")
+  sucursalId Int      @map("sucursal_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, sucursalId])
+  @@map("user_sucursales")
 }

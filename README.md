@@ -211,6 +211,61 @@ seeded user resolves to a typed session with `sucursalIds: []`) without
 sending an actual email — it's skipped when `DATABASE_URL` or `AUTH_SECRET`
 is absent, same pattern as Step 1's DB tests.
 
+## Sucursal scoping (ADR 0002, issue #12)
+
+Bar managers are scoped to one or more Sucursales via the **`UserSucursal`**
+join table on the app DB. There is no admin UI yet — assignment is a
+**dev-only CLI script** the operator runs from their machine.
+
+- **Schema:** `UserSucursal(userId, sucursalId, assignedAt)` in
+  [`prisma/app/schema.prisma`](prisma/app/schema.prisma), added via its own
+  migration (separate from Slice 1's Auth.js tables). `sucursalId` mirrors
+  `core_sucursal.id` in the nubebar read model with **no cross-DB foreign
+  key** — the two databases stay independent (ADR 0003); validity is checked
+  in application code instead.
+- **Seam:** [`lib/auth.assignSucursales(email, sucursalIds)`](lib/auth/index.ts)
+  — idempotent replace-set semantics, pre-creates the `User` row if the
+  email hasn't signed in yet, and validates every ID against the live
+  nubebar read model (`lib/db/nubebar.findExistingSucursalIds`) before
+  writing anything.
+- **Session enrichment:** the `session` callback in `lib/auth/index.ts`
+  (not the shared Edge-safe `lib/auth/config.ts`) reads `UserSucursal` on
+  every session resolution, so re-assigning and reloading the page reflects
+  the new list immediately — no new sign-in required. See that file's top
+  comment for why it has to live there given the JWT session strategy.
+
+### Create a test User and assign Sucursales locally
+
+```bash
+# 1. Find a real Sucursal ID from the live nubebar data, e.g. via Prisma Studio:
+npm run db:nubebar:generate && npx prisma studio --schema prisma/nubebar/schema.prisma
+# (or query lib/db/nubebar.findExistingSucursalIds / countSucursales directly)
+
+# 2. Assign it to a test email — pre-creates the User row if it doesn't exist yet:
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 1
+
+# 3. Sign in as that email via /login (see "Testing the login flow end to end"
+#    above) and confirm /me shows "Sucursal IDs: [1]".
+
+# 4. Re-run with a different set — the next sign-in (or page reload, since the
+#    session callback re-reads on every resolution) reflects the change:
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 1,2
+
+# 5. Re-running with the same set is a no-op (no duplicate rows):
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 1,2
+
+# 6. A non-existent Sucursal ID fails fast, before any row is written:
+npm run db:app:assign-sucursales -- --email test@example.com --sucursales 999999
+```
+
+The real-DB integration test
+([`lib/auth/sucursal-scoping.test.ts`](lib/auth/sucursal-scoping.test.ts))
+covers this end to end against the live Neon app DB and the live nubebar
+read model: assignment, idempotency, re-assignment, the unknown-ID rejection,
+and the unauthenticated-`null` case. It's skipped when `DATABASE_URL`,
+`AUTH_SECRET`, or `NUBEBAR_DATABASE_URL` is absent and does not require
+Resend env.
+
 ## Deployment (Vercel)
 
 Hosted on [Vercel](https://vercel.com) (see
