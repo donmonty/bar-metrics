@@ -146,6 +146,71 @@ git diff prisma/nubebar/schema.prisma   # review the drift before committing
 5. Confirm the readout: `curl http://localhost:3000/health` now shows
    `"nubebar":{"configured":true,"reachable":true,"sucursales":<n>}`.
 
+## Authentication (Auth.js v5 + Resend, ADR 0002, issue #11)
+
+Bar managers sign in with **email magic links** — no passwords, no OAuth.
+**Auth.js v5** (`next-auth@5`) issues the link via the **Resend** provider;
+clicking it lands the manager on `/me`, a placeholder authenticated page that
+confirms the signed-in email and (for now, always empty — Slice 2/#12 wires
+the real values) the Sucursales they're scoped to.
+
+- **Sole import surface:** [`lib/auth`](lib/auth/index.ts) — exposes `auth()`,
+  `signIn`, `signOut`, and the route `handlers`. Downstream code never imports
+  `next-auth` directly. `lib/auth/edge.ts` is a second, Edge-runtime-safe
+  entry point used only by [`middleware.ts`](middleware.ts) — see the top
+  comments in both `lib/auth/index.ts` and `lib/auth/config.ts` for why the
+  split exists (the Prisma adapter needs `pg`'s TCP sockets, unavailable in
+  Next.js Middleware's Edge runtime; JWT sessions make the split safe).
+- **Schema:** `User`, `Account`, `Session`, `VerificationToken` were added to
+  [`prisma/app/schema.prisma`](prisma/app/schema.prisma) via the same
+  migration pipeline Step 1 set up (`npm run db:app:migrate:dev`/`:deploy`).
+  `@auth/prisma-adapter` wires them to the existing app-DB client.
+- **Session strategy:** JWT, not Auth.js' database-session default — a
+  documented divergence (see `lib/auth/index.ts`'s top comment) required by
+  the Edge-middleware constraint above.
+- **Protected routes:** [`middleware.ts`](middleware.ts) redirects
+  unauthenticated visits to `/me` (and any future authenticated route added
+  to its `matcher`) to `/login`. `/login` and `/health` stay public.
+- **`/health` readout:** `{"auth": {"configured": <AUTH_SECRET present>,
+"resendConfigured": <AUTH_RESEND_KEY + AUTH_EMAIL_FROM present>}}` — no PII,
+  no session data.
+
+### One-time setup: local environment
+
+1. Generate a session-encryption secret and add it to `.env.local`:
+   `openssl rand -base64 32`, then `AUTH_SECRET=<value>`. (Auth.js' own
+   `npx auth secret` CLI is for a different, unrelated "auth" npm package —
+   don't use it; generate the value directly.)
+2. Create a free account at [resend.com](https://resend.com) → **API Keys** →
+   create a key → add it to `.env.local` as `AUTH_RESEND_KEY`. Never paste
+   the key into chat, an issue, or a PR — edit `.env.local` directly.
+3. Set the sender address `AUTH_EMAIL_FROM` in `.env.local`. Two options:
+   - **Quick local testing:** `AUTH_EMAIL_FROM=onboarding@resend.dev` —
+     Resend's built-in sandbox sender, no domain verification needed, but it
+     can only deliver to the email address registered on your Resend
+     account.
+   - **Real demo / production:** verify a domain you own under
+     resend.com/domains, then use an address at that domain.
+4. Apply the migration if you haven't already: `npm run db:app:migrate:deploy`.
+
+### Testing the login flow end to end
+
+1. `npm run dev`, then visit `http://localhost:3000/login`.
+2. Enter your email (the one registered on your Resend account, if using the
+   sandbox sender) and submit.
+3. Check your inbox for the magic-link email from Resend and click it.
+4. You should land on `/me`, showing your email and `Sucursal IDs: []`.
+5. Visit `/me` in an incognito/unauthenticated browser to confirm the
+   redirect to `/login`.
+6. `curl http://localhost:3000/health` should show
+   `"auth":{"configured":true,"resendConfigured":true}`.
+
+The real-DB integration test ([`lib/auth/round-trip.test.ts`](lib/auth/round-trip.test.ts))
+covers the seam itself (an unauthenticated request resolves to `null`; a
+seeded user resolves to a typed session with `sucursalIds: []`) without
+sending an actual email — it's skipped when `DATABASE_URL` or `AUTH_SECRET`
+is absent, same pattern as Step 1's DB tests.
+
 ## Deployment (Vercel)
 
 Hosted on [Vercel](https://vercel.com) (see
@@ -166,13 +231,16 @@ each variable from [`.env.example`](.env.example) under the Vercel project's
 **Settings → Environment Variables** (names below; never paste secret values into
 the repo):
 
-| Variable                | Introduced by       | Purpose                                                   |
-| ----------------------- | ------------------- | --------------------------------------------------------- |
-| `DATABASE_URL`          | issue #4 / ADR 0003 | Neon app DB — **pooled** runtime connection               |
-| `DATABASE_URL_UNPOOLED` | issue #4 / ADR 0003 | Neon app DB — **direct** connection for Prisma Migrate    |
-| `NUBEBAR_DATABASE_URL`  | issue #5 / ADR 0003 | Read-only legacy nubebar Postgres read-model — pooled URL |
+| Variable                     | Introduced by                        | Purpose                                                                                              |
+| ---------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`               | issue #4 / ADR 0003                  | Neon app DB — **pooled** runtime connection                                                          |
+| `DATABASE_URL_UNPOOLED`      | issue #4 / ADR 0003                  | Neon app DB — **direct** connection for Prisma Migrate                                               |
+| `NUBEBAR_DATABASE_URL`       | issue #5 / ADR 0003                  | Read-only legacy nubebar Postgres read-model — pooled URL                                            |
 | `NUBEBAR_AGENT_DATABASE_URL` | ADR 0002 / step 4 (reserved, unused) | Future locked-down read-only role + RLS for the chatbot's SQL escape hatch — not created in issue #5 |
-| `ANTHROPIC_API_KEY`     | ADR 0001 / 0004     | Claude API key for the tool-calling chatbot               |
+| `AUTH_SECRET`                | issue #11 / ADR 0002                 | Auth.js v5 session-encryption secret                                                                 |
+| `AUTH_RESEND_KEY`            | issue #11 / ADR 0002                 | Resend API key for the magic-link sign-in provider                                                   |
+| `AUTH_EMAIL_FROM`            | issue #11 / ADR 0002                 | Verified (or sandbox) sender address for magic-link email                                            |
+| `ANTHROPIC_API_KEY`          | ADR 0001 / 0004                      | Claude API key for the tool-calling chatbot                                                          |
 
 The Neon/Vercel integration injects both `DATABASE_URL` and
 `DATABASE_URL_UNPOOLED` automatically. Runtime connections must be **pooled**

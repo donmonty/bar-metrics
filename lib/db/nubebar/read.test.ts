@@ -17,7 +17,9 @@ import { countSucursales } from "./index";
  * set `NUBEBAR_DATABASE_URL` in `.env.local`, then `npm test`. This seam is
  * read-only by construction — there is no write path to clean up afterward.
  */
-const describeIfDb = process.env.NUBEBAR_DATABASE_URL ? describe : describe.skip;
+const describeIfDb = process.env.NUBEBAR_DATABASE_URL
+  ? describe
+  : describe.skip;
 
 describeIfDb("nubebar read model", () => {
   it("counts Sucursales from the live nubebar DB", async () => {
