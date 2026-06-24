@@ -266,6 +266,48 @@ and the unauthenticated-`null` case. It's skipped when `DATABASE_URL`,
 `AUTH_SECRET`, or `NUBEBAR_DATABASE_URL` is absent and does not require
 Resend env.
 
+### Assigning Sucursales against PRODUCTION
+
+`npm run db:app:assign-sucursales` always uses whatever's in your local
+`.env.local` — fine for local development, but **wrong** for onboarding a
+real bar manager, since that needs to write to the production Neon DB.
+[`scripts/assign-sucursales-prod.sh`](scripts/assign-sucursales-prod.sh) is a
+wrapper for that case, safe to run by hand or by an agent:
+
+```bash
+npm run db:app:assign-sucursales:prod -- --email real.manager@example.com --sucursales 1,2
+
+# or, non-interactively (no confirmation prompt — for agents/automation):
+npm run db:app:assign-sucursales:prod -- --yes --email real.manager@example.com --sucursales 1,2
+```
+
+What it does:
+
+1. Pulls fresh production env vars into `.env.production.local` via
+   `vercel env pull --environment=production` if that file doesn't already
+   exist — it never touches your `.env.local`.
+2. Prints the production app-DB host it's about to write to and the args
+   it's about to run with, then asks for an explicit `yes` before doing
+   anything — pass `--yes` to skip the prompt for non-interactive use.
+3. Runs `scripts/assign-sucursales.ts` with the production env vars
+   exported for just that one process — your shell's ambient environment
+   (and `.env.local`) are untouched once it exits.
+
+It writes directly to the production database with no dry-run mode, so
+double-check the email and Sucursal IDs before confirming.
+`.env.production.local` is gitignored (`.env*` is, except `.env.example`) —
+delete it (`rm .env.production.local`) once you're done if you'd rather not
+have production credentials sitting on disk between uses.
+
+**Before relying on this:** confirm Production and Development actually
+point at _different_ Neon databases in the Vercel dashboard (Project →
+Settings → Environment Variables → `DATABASE_URL`, filtered by
+environment). If the Neon store was provisioned as a single database shared
+across Production/Preview/Development (the default for the free tier unless
+branching was set up explicitly), this script will just write to the same
+database `npm run db:app:assign-sucursales` already does, and the "if it
+doesn't already exist" pull step still runs harmlessly either way.
+
 ## Deployment (Vercel)
 
 Hosted on [Vercel](https://vercel.com) (see
