@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { countSucursales } from "./index";
+import { countSucursales, findExistingSucursalIds, findSucursalesByIds } from "./index";
 
 /**
  * nubebar read-model integration test (issue #5): reads a real glossary
@@ -26,5 +26,19 @@ describeIfDb("nubebar read model", () => {
     const sucursales = await countSucursales();
 
     expect(sucursales).toBeGreaterThan(0);
+  });
+
+  it("returns id+nombre for real Sucursal IDs, dropping unknown ones (issue #16)", async () => {
+    const realIds = await findExistingSucursalIds(
+      Array.from({ length: 50 }, (_, i) => i + 1),
+    );
+    expect(realIds.length).toBeGreaterThan(0);
+
+    const bogusId = -1;
+    const result = await findSucursalesByIds([...realIds, bogusId]);
+
+    expect(result).toHaveLength(realIds.length);
+    expect(result.every((s) => typeof s.nombre === "string")).toBe(true);
+    expect(result.map((s) => s.id).sort()).toEqual([...realIds].sort());
   });
 });

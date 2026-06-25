@@ -79,6 +79,25 @@ export async function findExistingSucursalIds(
   return rows.map((row) => row.id).filter((id): id is number => id !== null);
 }
 
+/** Minimal Sucursal shape exposed for display purposes (issue #16). */
+export type SucursalSummary = { id: number; nombre: string };
+
+/**
+ * Looks up display info (id + nombre) for a set of Sucursal IDs (issue #16) —
+ * used by the dashboard's Sucursal switcher, which needs names for the IDs
+ * already known-valid via `session.user.sucursalIds`/`findExistingSucursalIds`.
+ */
+export async function findSucursalesByIds(
+  ids: number[],
+): Promise<SucursalSummary[]> {
+  if (ids.length === 0) return [];
+  return getClient().core_sucursal.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, nombre: true },
+    orderBy: { nombre: "asc" },
+  });
+}
+
 /** Result of probing the nubebar read model for the `/health` readout. */
 export type NubebarDbHealth =
   | { configured: false }
