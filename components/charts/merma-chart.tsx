@@ -2,10 +2,12 @@
  * `MermaChart` (issue #17) — the dashboard's signature chart. Follows #23's
  * conventions (see `components/charts/ranked-bar-chart.tsx`'s header):
  * `ChartContainer`/`ChartConfig` theming, `ChartTooltip`/`ChartTooltipContent`
- * for the tooltip, the `data`+`emptyMessage` empty-state contract, and a
- * sibling `MermaChartSkeleton` sized to the same fixed height. Pure/props-only
- * — no data fetching; `app/dashboard/merma/page.tsx` fetches via
- * `getMermaOverview` and passes the shaped data down.
+ * for the tooltip, the `data`+`emptyMessage` empty-state contract, height
+ * sized via `getChartHeightPx` (chart-styling fix — a fixed height made
+ * wrapped Ingrediente labels collide with neighboring bars once several
+ * were visible), and a sibling `MermaChartSkeleton` using the same sizing.
+ * Pure/props-only — no data fetching; `app/dashboard/merma/page.tsx` fetches
+ * via `getMermaOverview` and passes the shaped data down.
  *
  * Adds one thing the #23 POC didn't need: a top-N cap with an expansion
  * control, since merma's Ingrediente list can run long and the chart must
@@ -16,6 +18,7 @@
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
+import { CHART_Y_AXIS_WIDTH_PX, getChartHeightPx } from "./chart-layout";
 import { Button } from "@/components/ui/button";
 import {
   ChartConfig,
@@ -25,7 +28,6 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CHART_HEIGHT = "h-64";
 const DEFAULT_TOP_N = 15;
 
 export interface MermaChartDatum {
@@ -59,7 +61,8 @@ export function MermaChart({
   if (data.length === 0) {
     return (
       <div
-        className={`flex ${CHART_HEIGHT} items-center justify-center text-sm text-muted-foreground`}
+        className="flex items-center justify-center text-sm text-muted-foreground"
+        style={{ height: getChartHeightPx(topN) }}
       >
         {emptyMessage}
       </div>
@@ -71,7 +74,11 @@ export function MermaChart({
 
   return (
     <div className="space-y-2">
-      <ChartContainer config={chartConfig} className={`${CHART_HEIGHT} w-full`}>
+      <ChartContainer
+        config={chartConfig}
+        className="w-full aspect-auto"
+        style={{ height: getChartHeightPx(visible.length) }}
+      >
         <BarChart data={visible} layout="vertical" margin={{ left: 12 }}>
           <CartesianGrid horizontal={false} />
           <XAxis type="number" hide />
@@ -80,7 +87,7 @@ export function MermaChart({
             dataKey="ingrediente"
             tickLine={false}
             axisLine={false}
-            width={100}
+            width={CHART_Y_AXIS_WIDTH_PX}
           />
           <ChartTooltip
             content={
@@ -114,5 +121,10 @@ export function MermaChart({
 }
 
 export function MermaChartSkeleton() {
-  return <Skeleton className={`${CHART_HEIGHT} w-full`} />;
+  return (
+    <Skeleton
+      className="w-full aspect-auto"
+      style={{ height: getChartHeightPx(DEFAULT_TOP_N) }}
+    />
+  );
 }
