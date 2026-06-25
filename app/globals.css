@@ -66,7 +66,10 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
+    /* chart-1 was oklch(0.87 0 0) — near-white, failed contrast against the
+       white chart background. Darkened to land near WCAG AA for the thin
+       bar fills charts use it for; chart-2..5 were already dark enough. */
+    --chart-1: oklch(0.45 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
