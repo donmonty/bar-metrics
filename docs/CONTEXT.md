@@ -37,6 +37,10 @@ Django repo points to it. Glossary only — no implementation details.
   ID). Tracked by weight: `peso_inicial`, `peso_actual`, plus glass/full
   reference weights. States: NUEVA, CON_LIQUIDO, VACÍA, PERDIDA.
 - **Traspaso** — A transfer of a Botella from one Almacén to another.
+- **Stock value** — The current total monetary value of all active Botellas on
+  hand at a Sucursal, computed from each Botella's remaining liquid and its
+  Producto's unit price. A point-in-time snapshot, not a time series — no
+  historical stock-value snapshots exist in the data model.
 
 ## Measurement & sales events
 
