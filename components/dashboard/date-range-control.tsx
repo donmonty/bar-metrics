@@ -27,6 +27,16 @@ const PRESET_LABELS: Record<DateRangePresetKey, string> = {
   last90: "Últimos 90 días",
 };
 
+// Passed as Select's `items` prop so the trigger resolves a selection's label
+// from this map directly, rather than from the rendered <SelectItem>'s text —
+// the latter only works for the value the popup happened to mount with
+// first, so a value picked after the initial render (e.g. "custom") would
+// otherwise show its raw value instead of "Rango personalizado".
+const PRESET_SELECT_ITEMS: Record<string, string> = {
+  ...PRESET_LABELS,
+  custom: "Rango personalizado",
+};
+
 export function DateRangeControl() {
   const router = useRouter();
   const pathname = usePathname();
@@ -60,7 +70,11 @@ export function DateRangeControl() {
 
   return (
     <div className="flex items-center gap-2">
-      <Select value={selectValue} onValueChange={handlePresetChange}>
+      <Select
+        items={PRESET_SELECT_ITEMS}
+        value={selectValue}
+        onValueChange={handlePresetChange}
+      >
         <SelectTrigger aria-label="Rango de fechas">
           <SelectValue />
         </SelectTrigger>
