@@ -98,6 +98,54 @@ export async function findSucursalesByIds(
   });
 }
 
+/** One Ingrediente's merma row from a single Inspección's report (issue #17). */
+export type MermaIngredienteRow = {
+  ingredienteId: number;
+  ingrediente: string;
+  consumoVentas: number;
+  consumoReal: number;
+};
+
+/**
+ * `core_mermaingrediente` rows for the given Sucursal whose Inspección
+ * `fecha_alta` falls within `[from, to]` (inclusive) — issue #17. Joins
+ * through `core_reportemermas` -> `core_inspeccion` to scope by Sucursal and
+ * date, and through `core_ingrediente` for display names. Rows with a null
+ * `consumo_ventas`/`consumo_real` (an Inspección the Django app hasn't
+ * totalled yet) are dropped — there is nothing to aggregate for them.
+ */
+export async function findMermaIngredientesForSucursal(
+  sucursalId: number,
+  from: Date,
+  to: Date,
+): Promise<MermaIngredienteRow[]> {
+  const rows = await getClient().core_mermaingrediente.findMany({
+    where: {
+      consumo_ventas: { not: null },
+      consumo_real: { not: null },
+      core_reportemermas: {
+        core_inspeccion: {
+          sucursal_id: sucursalId,
+          fecha_alta: { gte: from, lte: to },
+        },
+      },
+    },
+    select: {
+      ingrediente_id: true,
+      consumo_ventas: true,
+      consumo_real: true,
+      core_ingrediente: { select: { nombre: true } },
+    },
+  });
+
+  return rows.map((row) => ({
+    ingredienteId: row.ingrediente_id,
+    ingrediente: row.core_ingrediente.nombre,
+    consumoVentas: Number(row.consumo_ventas),
+    consumoReal: Number(row.consumo_real),
+  }));
+}
+
 /** Result of probing the nubebar read model for the `/health` readout. */
 export type NubebarDbHealth =
   | { configured: false }
