@@ -34,11 +34,11 @@ describeIfAgentDb("nubebar_agent + RLS", () => {
   });
 
   async function setSucursalIds(value: string | null) {
-    if (value === null) {
-      await client.query("RESET app.sucursal_ids");
-    } else {
-      await client.query("SET app.sucursal_ids = $1", [value]);
-    }
+    // SET doesn't accept bind parameters; set_config() does and is
+    // session-scoped (the `false` argument) just like SET.
+    await client.query("SELECT set_config('app.sucursal_ids', $1, false)", [
+      value ?? "",
+    ]);
   }
 
   it("sees rows for the real Sucursal it's scoped to (direct group: core_venta)", async () => {

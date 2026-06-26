@@ -152,19 +152,29 @@ A second, deliberately locked-down Postgres role on the same nubebar cluster
 — `nubebar_agent` — exists so a future chatbot SQL escape-hatch tool (ADR 0001) can run model-generated SQL with the database itself, not application
 code, as the blast-radius boundary. `nubebar_agent` gets `SELECT`-only grants
 (no write privileges anywhere) plus Row-Level Security policies on every
-Sucursal-reachable table, forcing every query — including the role's own — to
-stay within a per-session set of Sucursal IDs. This step is **DB-only**: it
-adds no `lib/db/nubebarAgent` seam and does not touch
-[`lib/db/nubebar`](lib/db/nubebar/index.ts) (the existing trusted-app-role
-read path used by the dashboard). The app-level wrapper that actually connects
-as `nubebar_agent` is deferred to the escape-hatch tool's own future build
-step.
+Sucursal-reachable table, restricting every query it runs to a per-session set
+of Sucursal IDs. This step is **DB-only**: it adds no `lib/db/nubebarAgent`
+seam and does not touch [`lib/db/nubebar`](lib/db/nubebar/index.ts) (the
+existing trusted-app-role read path used by the dashboard). The app-level
+wrapper that actually connects as `nubebar_agent` is deferred to the
+escape-hatch tool's own future build step.
 
 - **Script (committed, idempotent):**
   [`scripts/nubebar-agent-rls.sql`](scripts/nubebar-agent-rls.sql) — every
   `CREATE POLICY` is preceded by `DROP POLICY IF EXISTS`, and every `GRANT` is
   naturally idempotent, so re-running it against an already-configured cluster
   is a no-op. Re-run it whenever Django introduces a new tenant-bearing table.
+- **Deviation from issue #32's literal acceptance criteria — no `FORCE ROW
+LEVEL SECURITY`:** every policy is scoped `TO nubebar_agent` specifically,
+  and tables are deliberately **not** put under `FORCE ROW LEVEL SECURITY`.
+  `FORCE` makes RLS apply even to a table's _owning_ role — and the owning
+  role here, `db`, is the exact same role
+  [`lib/db/nubebar`](lib/db/nubebar/index.ts) (the existing dashboard read
+  seam) connects as. Forcing RLS with no policy scoped to `db` was confirmed
+  live to break the dashboard's reads entirely (zero rows). Without `FORCE`,
+  RLS still fully restricts every non-owner role — `nubebar_agent` included —
+  so its tenant isolation is unaffected; `db`'s existing, already
+  app-layer-filtered read access is preserved exactly as before this slice.
 - **Session-variable contract:** `SET app.sucursal_ids = '1,2,3'` — a plain
   comma-separated string of integers (not a Postgres array literal). Policies
   read it via `current_setting('app.sucursal_ids', true)` (the `true` means
@@ -202,9 +212,11 @@ create`), never raw `CREATE ROLE` SQL: the existing non-admin `db` role
    caller yet to need PgBouncer.
 4. Verify the script applied correctly via catalog introspection (one-time
    manual check, not an automated test):
-   - `relrowsecurity = true` AND `relforcerowsecurity = true` in `pg_class`
-     for all 14 RLS-scoped tables.
-   - The expected policy present in `pg_policy` for each of those tables.
+   - `relrowsecurity = true` in `pg_class` for all 14 RLS-scoped tables
+     (`relforcerowsecurity` is deliberately `false` — see the deviation note
+     above).
+   - The expected policy present in `pg_policy` for each of those tables,
+     scoped `TO nubebar_agent` (check `pg_policy.polroles`).
    - `information_schema.table_privileges` shows `SELECT`-only for
      `nubebar_agent` on the 14 RLS tables + the 5 catalog tables, and zero
      rows for the 4 Django user/auth tables.

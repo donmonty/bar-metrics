@@ -21,60 +21,73 @@
 -- = 14 distinct tables. This script implements the itemized list verbatim
 -- (the more specific, safer source of truth) rather than truncating to match
 -- the prose count — see the PR description for this discrepancy.
+--
+-- DEVIATION from #32's literal acceptance criteria: policies are scoped
+-- `TO nubebar_agent` and tables are NOT put under FORCE ROW LEVEL SECURITY.
+-- FORCE applies RLS even to a table's owning role — and the owning role here
+-- (`db`) is the SAME role the existing trusted-app-role dashboard seam
+-- (lib/db/nubebar) connects as. Forcing RLS with no policy scoped to `db`
+-- made the live dashboard see zero rows (confirmed against the real
+-- cluster). Without FORCE, RLS still fully applies to any non-owner role
+-- (nubebar_agent included) — Postgres only exempts the *owner*, and only
+-- when FORCE is absent. So nubebar_agent's isolation is unaffected; `db`'s
+-- existing unrestricted read access (already trusted, already filtered at
+-- the app layer) is preserved. See the PR description for the live-tested
+-- before/after.
 
 -- ---------------------------------------------------------------------------
 -- Direct group: own sucursal_id (or id, for core_sucursal itself) column.
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE core_sucursal ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_sucursal FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_sucursal;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_sucursal
+  TO nubebar_agent
   USING (id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 ALTER TABLE core_almacen ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_almacen FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_almacen;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_almacen
+  TO nubebar_agent
   USING (sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 -- core_botella.sucursal_id is nullable: a null sucursal_id is excluded (no
 -- Sucursal claims it), not coalesced to a default — matches the existing
 -- nubebar/index.ts convention of filtering out null almacen_id rows.
 ALTER TABLE core_botella ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_botella FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_botella;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_botella
+  TO nubebar_agent
   USING (sucursal_id IS NOT NULL AND sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 ALTER TABLE core_inspeccion ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_inspeccion FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_inspeccion;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_inspeccion
+  TO nubebar_agent
   USING (sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 ALTER TABLE core_productosinregistro ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_productosinregistro FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_productosinregistro;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_productosinregistro
+  TO nubebar_agent
   USING (sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 ALTER TABLE core_receta ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_receta FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_receta;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_receta
+  TO nubebar_agent
   USING (sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 ALTER TABLE core_traspaso ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_traspaso FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_traspaso;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_traspaso
+  TO nubebar_agent
   USING (sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 ALTER TABLE core_venta ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_venta FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_venta;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_venta
+  TO nubebar_agent
   USING (sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[]));
 
 -- ---------------------------------------------------------------------------
@@ -83,9 +96,9 @@ CREATE POLICY nubebar_agent_sucursal_scope ON core_venta
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE core_caja ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_caja FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_caja;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_caja
+  TO nubebar_agent
   USING (EXISTS (
     SELECT 1 FROM core_almacen
     WHERE core_almacen.id = core_caja.almacen_id
@@ -93,9 +106,9 @@ CREATE POLICY nubebar_agent_sucursal_scope ON core_caja
   ));
 
 ALTER TABLE core_iteminspeccion ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_iteminspeccion FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_iteminspeccion;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_iteminspeccion
+  TO nubebar_agent
   USING (EXISTS (
     SELECT 1 FROM core_inspeccion
     WHERE core_inspeccion.id = core_iteminspeccion.inspeccion_id
@@ -103,9 +116,9 @@ CREATE POLICY nubebar_agent_sucursal_scope ON core_iteminspeccion
   ));
 
 ALTER TABLE core_reportemermas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_reportemermas FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_reportemermas;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_reportemermas
+  TO nubebar_agent
   USING (EXISTS (
     SELECT 1 FROM core_inspeccion
     WHERE core_inspeccion.id = core_reportemermas.inspeccion_id
@@ -114,9 +127,9 @@ CREATE POLICY nubebar_agent_sucursal_scope ON core_reportemermas
 
 -- Joins directly to core_almacen (not via core_reportemermas) per PRD #31.
 ALTER TABLE core_mermaingrediente ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_mermaingrediente FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_mermaingrediente;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_mermaingrediente
+  TO nubebar_agent
   USING (EXISTS (
     SELECT 1 FROM core_almacen
     WHERE core_almacen.id = core_mermaingrediente.almacen_id
@@ -124,9 +137,9 @@ CREATE POLICY nubebar_agent_sucursal_scope ON core_mermaingrediente
   ));
 
 ALTER TABLE core_ingredientereceta ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_ingredientereceta FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_ingredientereceta;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_ingredientereceta
+  TO nubebar_agent
   USING (EXISTS (
     SELECT 1 FROM core_receta
     WHERE core_receta.id = core_ingredientereceta.receta_id
@@ -134,9 +147,9 @@ CREATE POLICY nubebar_agent_sucursal_scope ON core_ingredientereceta
   ));
 
 ALTER TABLE core_consumorecetavendida ENABLE ROW LEVEL SECURITY;
-ALTER TABLE core_consumorecetavendida FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS nubebar_agent_sucursal_scope ON core_consumorecetavendida;
 CREATE POLICY nubebar_agent_sucursal_scope ON core_consumorecetavendida
+  TO nubebar_agent
   USING (EXISTS (
     SELECT 1 FROM core_venta
     WHERE core_venta.id = core_consumorecetavendida.venta_id
