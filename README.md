@@ -146,6 +146,83 @@ git diff prisma/nubebar/schema.prisma   # review the drift before committing
 5. Confirm the readout: `curl http://localhost:3000/health` now shows
    `"nubebar":{"configured":true,"reachable":true,"sucursales":<n>}`.
 
+## `nubebar_agent` role + RLS (ADR 0002, issue #32)
+
+A second, deliberately locked-down Postgres role on the same nubebar cluster
+— `nubebar_agent` — exists so a future chatbot SQL escape-hatch tool (ADR 0001) can run model-generated SQL with the database itself, not application
+code, as the blast-radius boundary. `nubebar_agent` gets `SELECT`-only grants
+(no write privileges anywhere) plus Row-Level Security policies on every
+Sucursal-reachable table, restricting every query it runs to a per-session set
+of Sucursal IDs. This step is **DB-only**: it adds no `lib/db/nubebarAgent`
+seam and does not touch [`lib/db/nubebar`](lib/db/nubebar/index.ts) (the
+existing trusted-app-role read path used by the dashboard). The app-level
+wrapper that actually connects as `nubebar_agent` is deferred to the
+escape-hatch tool's own future build step.
+
+- **Script (committed, idempotent):**
+  [`scripts/nubebar-agent-rls.sql`](scripts/nubebar-agent-rls.sql) — every
+  `CREATE POLICY` is preceded by `DROP POLICY IF EXISTS`, and every `GRANT` is
+  naturally idempotent, so re-running it against an already-configured cluster
+  is a no-op. Re-run it whenever Django introduces a new tenant-bearing table.
+- **Deviation from issue #32's literal acceptance criteria — no `FORCE ROW
+LEVEL SECURITY`:** every policy is scoped `TO nubebar_agent` specifically,
+  and tables are deliberately **not** put under `FORCE ROW LEVEL SECURITY`.
+  `FORCE` makes RLS apply even to a table's _owning_ role — and the owning
+  role here, `db`, is the exact same role
+  [`lib/db/nubebar`](lib/db/nubebar/index.ts) (the existing dashboard read
+  seam) connects as. Forcing RLS with no policy scoped to `db` was confirmed
+  live to break the dashboard's reads entirely (zero rows). Without `FORCE`,
+  RLS still fully restricts every non-owner role — `nubebar_agent` included —
+  so its tenant isolation is unaffected; `db`'s existing, already
+  app-layer-filtered read access is preserved exactly as before this slice.
+- **Session-variable contract:** `SET app.sucursal_ids = '1,2,3'` — a plain
+  comma-separated string of integers (not a Postgres array literal). Policies
+  read it via `current_setting('app.sucursal_ids', true)` (the `true` means
+  "don't error if unset") and check membership with
+  `sucursal_id = ANY(string_to_array(current_setting('app.sucursal_ids', true), ',')::int[])`.
+  An unset/empty variable resolves to zero matching rows — fail-closed, not an
+  error or unrestricted access.
+- **Integration test:**
+  [`lib/db/nubebar/agent-rls.test.ts`](lib/db/nubebar/agent-rls.test.ts) —
+  connects directly as `nubebar_agent` via `pg` (no Prisma client for this
+  role) and proves the isolation property end to end: scoped reads, a
+  synthetic nonexistent Sucursal returning zero rows, the multi-ID `ANY(...)`
+  case, fail-closed on an unset session variable, the join-path policy group,
+  and a rejected write. Skips cleanly when `NUBEBAR_AGENT_DATABASE_URL` is
+  absent, mirroring `lib/db/nubebar/read.test.ts`'s gating convention.
+
+### One-time setup: create the role and apply the script
+
+This is infrastructure DDL against shared infrastructure this app does not
+own for writes (Django owns the schema) — every step here is run by hand by a
+developer, deliberately, never by CI/CD.
+
+1. **Create `nubebar_agent` via DigitalOcean's managed-database API**
+   (`db-cluster-create-user` — the DO databases MCP, or `doctl databases user
+create`), never raw `CREATE ROLE` SQL: the existing non-admin `db` role
+   lacks `rolcreaterole` on this cluster (confirmed by the RLS spike, #30).
+   Save the generated password immediately; DO does not show it again.
+2. Run [`scripts/nubebar-agent-rls.sql`](scripts/nubebar-agent-rls.sql)
+   against the live cluster as the existing `db` role (the current table
+   owner — RLS DDL does not require superuser, per the spike).
+3. Build the role's direct connection string (cluster host/port, database
+   `db`, the new role's username/password) and put it into `.env.local` as
+   `NUBEBAR_AGENT_DATABASE_URL`, appending `?sslmode=no-verify`. This is a
+   direct cluster connection, not a Connection Pool — there's no app runtime
+   caller yet to need PgBouncer.
+4. Verify the script applied correctly via catalog introspection (one-time
+   manual check, not an automated test):
+   - `relrowsecurity = true` in `pg_class` for all 14 RLS-scoped tables
+     (`relforcerowsecurity` is deliberately `false` — see the deviation note
+     above).
+   - The expected policy present in `pg_policy` for each of those tables,
+     scoped `TO nubebar_agent` (check `pg_policy.polroles`).
+   - `information_schema.table_privileges` shows `SELECT`-only for
+     `nubebar_agent` on the 14 RLS tables + the 5 catalog tables, and zero
+     rows for the 4 Django user/auth tables.
+5. Run the real-DB integration test:
+   `npm test -- lib/db/nubebar/agent-rls.test.ts`.
+
 ## Authentication (Auth.js v5 + Resend, ADR 0002, issue #11)
 
 Bar managers sign in with **email magic links** — no passwords, no OAuth.
@@ -328,16 +405,16 @@ each variable from [`.env.example`](.env.example) under the Vercel project's
 **Settings → Environment Variables** (names below; never paste secret values into
 the repo):
 
-| Variable                     | Introduced by                        | Purpose                                                                                              |
-| ---------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`               | issue #4 / ADR 0003                  | Neon app DB — **pooled** runtime connection                                                          |
-| `DATABASE_URL_UNPOOLED`      | issue #4 / ADR 0003                  | Neon app DB — **direct** connection for Prisma Migrate                                               |
-| `NUBEBAR_DATABASE_URL`       | issue #5 / ADR 0003                  | Read-only legacy nubebar Postgres read-model — pooled URL                                            |
-| `NUBEBAR_AGENT_DATABASE_URL` | ADR 0002 / step 4 (reserved, unused) | Future locked-down read-only role + RLS for the chatbot's SQL escape hatch — not created in issue #5 |
-| `AUTH_SECRET`                | issue #11 / ADR 0002                 | Auth.js v5 session-encryption secret                                                                 |
-| `AUTH_RESEND_KEY`            | issue #11 / ADR 0002                 | Resend API key for the magic-link sign-in provider                                                   |
-| `AUTH_EMAIL_FROM`            | issue #11 / ADR 0002                 | Verified (or sandbox) sender address for magic-link email                                            |
-| `ANTHROPIC_API_KEY`          | ADR 0001 / 0004                      | Claude API key for the tool-calling chatbot                                                          |
+| Variable                     | Introduced by        | Purpose                                                                                                                     |
+| ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`               | issue #4 / ADR 0003  | Neon app DB — **pooled** runtime connection                                                                                 |
+| `DATABASE_URL_UNPOOLED`      | issue #4 / ADR 0003  | Neon app DB — **direct** connection for Prisma Migrate                                                                      |
+| `NUBEBAR_DATABASE_URL`       | issue #5 / ADR 0003  | Read-only legacy nubebar Postgres read-model — pooled URL                                                                   |
+| `NUBEBAR_AGENT_DATABASE_URL` | issue #32 / ADR 0002 | Locked-down read-only `nubebar_agent` role + RLS — direct connection, no app caller yet (escape-hatch tool is a later step) |
+| `AUTH_SECRET`                | issue #11 / ADR 0002 | Auth.js v5 session-encryption secret                                                                                        |
+| `AUTH_RESEND_KEY`            | issue #11 / ADR 0002 | Resend API key for the magic-link sign-in provider                                                                          |
+| `AUTH_EMAIL_FROM`            | issue #11 / ADR 0002 | Verified (or sandbox) sender address for magic-link email                                                                   |
+| `ANTHROPIC_API_KEY`          | ADR 0001 / 0004      | Claude API key for the tool-calling chatbot                                                                                 |
 
 The Neon/Vercel integration injects both `DATABASE_URL` and
 `DATABASE_URL_UNPOOLED` automatically. Runtime connections must be **pooled**
