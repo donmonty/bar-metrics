@@ -251,6 +251,68 @@ export async function findVentasForSucursal(
   }));
 }
 
+/** One unmatched POS sales line, after the since-registered anti-join (issue #20). */
+export type ProductoSinRegistroRow = {
+  codigoPos: string;
+  nombre: string;
+  importe: number;
+  unidades: number;
+};
+
+/**
+ * `core_productosinregistro` rows for the given Sucursal whose `fecha` falls
+ * within `[from, to]` (inclusive), EXCLUDING any `codigo_pos` that now has a
+ * matching `core_receta` for the same Sucursal — issue #20.
+ *
+ * `core_productosinregistro` is an append-only POS-ingestion log: rows
+ * persist even after the product is later registered as a Receta. Django's
+ * own report (`analytics/reporte_productos_sin_registro.py`,
+ * `get_productos_sin_registro`) does NOT query the table alone — it excludes
+ * any `codigo_pos` that now has a matching Receta for the Sucursal. This
+ * replicates that anti-join via two queries (no FK exists between the two
+ * tables to join on directly): fetch the Sucursal's registered
+ * `codigo_pos` set first, then exclude it from the unmatched-log query.
+ *
+ * Rows with a null `fecha` (can't be placed in a date range) or null
+ * `importe`/`unidades` are dropped — nothing sound to aggregate for them.
+ */
+export async function findProductosSinRegistroForSucursal(
+  sucursalId: number,
+  from: Date,
+  to: Date,
+): Promise<ProductoSinRegistroRow[]> {
+  const registeredRecetas = await getClient().core_receta.findMany({
+    where: { sucursal_id: sucursalId },
+    select: { codigo_pos: true },
+  });
+  const registeredCodigosPos = registeredRecetas.map((r) => r.codigo_pos);
+
+  const rows = await getClient().core_productosinregistro.findMany({
+    where: {
+      sucursal_id: sucursalId,
+      fecha: { gte: from, lte: to },
+      importe: { not: null },
+      unidades: { not: null },
+      ...(registeredCodigosPos.length > 0
+        ? { codigo_pos: { notIn: registeredCodigosPos } }
+        : {}),
+    },
+    select: {
+      codigo_pos: true,
+      nombre: true,
+      importe: true,
+      unidades: true,
+    },
+  });
+
+  return rows.map((row) => ({
+    codigoPos: row.codigo_pos,
+    nombre: row.nombre,
+    importe: row.importe!,
+    unidades: row.unidades!,
+  }));
+}
+
 /** Result of probing the nubebar read model for the `/health` readout. */
 export type NubebarDbHealth =
   | { configured: false }
