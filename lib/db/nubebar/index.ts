@@ -207,6 +207,50 @@ export async function findActiveBotellasForSucursal(
     }));
 }
 
+/** One Venta's raw fields needed for sales aggregation (issue #19). */
+export type VentaSalesRow = {
+  fecha: Date;
+  unidades: number;
+  importe: number;
+  recetaId: number;
+  receta: string;
+};
+
+/**
+ * `core_venta` rows for the given Sucursal whose `fecha` falls within
+ * `[from, to]` (inclusive) — issue #19. `sucursal_id` is denormalized
+ * directly on Venta (no join through Caja needed), and `receta_id` joins to
+ * `core_receta` only for the display name. `lib/metrics/sales.ts` does both
+ * the daily-revenue and top-N-Recetas aggregation from these raw rows.
+ */
+export async function findVentasForSucursal(
+  sucursalId: number,
+  from: Date,
+  to: Date,
+): Promise<VentaSalesRow[]> {
+  const rows = await getClient().core_venta.findMany({
+    where: {
+      sucursal_id: sucursalId,
+      fecha: { gte: from, lte: to },
+    },
+    select: {
+      fecha: true,
+      unidades: true,
+      importe: true,
+      receta_id: true,
+      core_receta: { select: { nombre: true } },
+    },
+  });
+
+  return rows.map((row) => ({
+    fecha: row.fecha,
+    unidades: row.unidades,
+    importe: row.importe,
+    recetaId: row.receta_id,
+    receta: row.core_receta.nombre,
+  }));
+}
+
 /** Result of probing the nubebar read model for the `/health` readout. */
 export type NubebarDbHealth =
   | { configured: false }
