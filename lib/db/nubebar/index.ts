@@ -146,6 +146,67 @@ export async function findMermaIngredientesForSucursal(
   }));
 }
 
+/**
+ * One active Botella's raw fields needed to compute its stock value
+ * (issue #18). Numeric fields are nullable because Django's own model
+ * declares them as such (`Decimal?`/`Int?`) — `lib/metrics/stock-value.ts`
+ * decides how to treat a missing field, this seam just passes through what
+ * the DB has.
+ */
+export type ActiveBotellaStockRow = {
+  almacenTipo: string;
+  precioUnitario: number | null;
+  capacidad: number | null;
+  pesoActual: number | null;
+  pesoCristal: number | null;
+  factorPeso: number | null;
+};
+
+/**
+ * Active Botellas on hand at a Sucursal, with the fields
+ * `lib/metrics.getStockValue` needs to compute per-bottle value and group by
+ * Almacén — issue #18. "Active" mirrors Django's own `reporte_stock.py`/
+ * `inventarios/views.py` convention: excludes `estado` VACIA ('0') and
+ * PERDIDA ('3'), the only two codes consistently excluded for "on hand"
+ * across the legacy app (confirmed in `core/models.py`'s `ESTADOS_BOTELLA`
+ * and Django's own report code, not guessed).
+ */
+export async function findActiveBotellasForSucursal(
+  sucursalId: number,
+): Promise<ActiveBotellaStockRow[]> {
+  const rows = await getClient().core_botella.findMany({
+    where: {
+      sucursal_id: sucursalId,
+      estado: { notIn: ["0", "3"] },
+      almacen_id: { not: null },
+    },
+    select: {
+      precio_unitario: true,
+      capacidad: true,
+      peso_actual: true,
+      peso_cristal: true,
+      core_almacen: { select: { tipo: true } },
+      core_producto: { select: { core_ingrediente: { select: { factor_peso: true } } } },
+    },
+  });
+
+  return rows
+    .filter((row) => row.core_almacen !== null)
+    .map((row) => ({
+      almacenTipo: row.core_almacen!.tipo,
+      precioUnitario:
+        row.precio_unitario !== null ? Number(row.precio_unitario) : null,
+      capacidad: row.capacidad,
+      pesoActual: row.peso_actual,
+      pesoCristal: row.peso_cristal,
+      factorPeso:
+        row.core_producto?.core_ingrediente.factor_peso !== undefined &&
+        row.core_producto?.core_ingrediente.factor_peso !== null
+          ? Number(row.core_producto.core_ingrediente.factor_peso)
+          : null,
+    }));
+}
+
 /** Result of probing the nubebar read model for the `/health` readout. */
 export type NubebarDbHealth =
   | { configured: false }
