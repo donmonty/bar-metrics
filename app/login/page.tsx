@@ -10,6 +10,10 @@
  * attacker-supplied `callbackUrl`.
  */
 import { signIn } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function safeCallbackUrl(value: string | undefined): string {
   if (value && value.startsWith("/") && !value.startsWith("//")) {
@@ -38,16 +42,34 @@ export default async function LoginPage({
   const { callbackUrl } = await searchParams;
 
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
-      <h1>Sign in to bar-metrics</h1>
-      <form action={sendMagicLink}>
-        <input type="hidden" name="callbackUrl" value={callbackUrl ?? ""} />
-        <label htmlFor="email">Email</label>
-        <br />
-        <input id="email" name="email" type="email" required autoFocus />
-        <br />
-        <button type="submit">Send magic link</button>
-      </form>
+    <main className="flex min-h-screen items-center justify-center p-8">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Sign in to bar-metrics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={sendMagicLink} className="space-y-4">
+            <input
+              type="hidden"
+              name="callbackUrl"
+              value={callbackUrl ?? ""}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoFocus
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Send magic link
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   );
 }
