@@ -65,6 +65,45 @@ describe("validateSelectOnly", () => {
   });
 
   it.each([
+    "SELECT set_config/**/('app.sucursal_ids', '1', false)",
+    "SELECT set_config-- evade the regex\n('app.sucursal_ids', '1', false)",
+    "SELECT current_setting/* x */('app.sucursal_ids')",
+    "SELECT pg_catalog.set_config('app.sucursal_ids', '1', false)",
+    "SELECT SET_CONFIG('app.sucursal_ids', '1', false)",
+  ])(
+    "rejects set_config/current_setting even when a comment hides the call from a naive regex: %s",
+    (sql) => {
+      expect(validateSelectOnly(sql)?.error).toBe("rejected");
+    },
+  );
+
+  it("does not let a string literal masquerade as a comment to hide a real set_config call", () => {
+    // To Postgres, the `/*`/`*/` here are plain string contents, not a
+    // comment — the `set_config(...)` between them is real, executable
+    // code. A comment-stripper that isn't quote-aware would wrongly treat
+    // it as commented-out and miss it.
+    const result = validateSelectOnly(
+      "SELECT '/*' || set_config('app.sucursal_ids', '1', false) || '*/'",
+    );
+    expect(result?.error).toBe("rejected");
+  });
+
+  it("does not false-positive on a forbidden-looking call genuinely inside a string literal", () => {
+    expect(
+      validateSelectOnly(
+        "SELECT 'set_config(x)' AS literal_text FROM core_venta",
+      ),
+    ).toBeNull();
+  });
+
+  it("does not false-positive on a semicolon inside a string literal or dollar-quoted string", () => {
+    expect(validateSelectOnly("SELECT 'a;b' AS x FROM core_venta")).toBeNull();
+    expect(
+      validateSelectOnly("SELECT $$a;b$$ AS x FROM core_venta"),
+    ).toBeNull();
+  });
+
+  it.each([
     "CALL some_procedure()",
     "EXECUTE some_prepared_statement",
     "COPY core_venta TO STDOUT",

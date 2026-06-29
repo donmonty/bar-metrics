@@ -85,6 +85,14 @@ describeIfAgentDb("runNubebarAgentQuery", () => {
     expect(result).toMatchObject({ error: "rejected" });
   });
 
+  it("rejects the same set_config override attempt even hidden behind a comment", async () => {
+    const result = await runNubebarAgentQuery(
+      [999],
+      "WITH _ AS (SELECT set_config/**/('app.sucursal_ids', '1', false)) SELECT * FROM core_venta",
+    );
+    expect(result).toMatchObject({ error: "rejected" });
+  });
+
   it("rejects a write attempt at the app layer before touching the DB", async () => {
     const result = await runNubebarAgentQuery(
       [1],

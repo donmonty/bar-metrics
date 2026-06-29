@@ -81,13 +81,106 @@ export type QueryError = QueryRejection | QueryDbError;
 export type QueryResult = { rows: Record<string, unknown>[] };
 
 /**
+ * Strips SQL comments (`-- ...` and `/* ... *&#47;`, including nested block
+ * comments) and blanks out the contents of string literals (`'...'`),
+ * quoted identifiers (`"..."`), and dollar-quoted strings (`$tag$...$tag$`)
+ * from `sql`, leaving real code tokens untouched and in their original
+ * positions. This is a quote/comment-aware scan (a small state machine, not
+ * a second regex pass) deliberately — a security review found that a naive
+ * regex-based comment strip is itself bypassable: stripping `/* ... *&#47;`
+ * without tracking quote state would treat a `/*` that appears *inside* a
+ * string literal as the start of a real comment, letting an attacker hide
+ * actual code between a `/*` planted inside an earlier string and a later
+ * `*&#47;`, which Postgres parses as plain string contents and ordinary
+ * code (not a comment) — i.e. naive stripping reintroduces exactly the kind
+ * of "detector sees nothing, database executes something else" gap this
+ * function exists to close. Tracking real quote state avoids that: a `/*`
+ * or `--` only starts a comment when it appears outside any string.
+ *
+ * Only this normalized copy is used for the keyword/semicolon/function
+ * checks below — the original `sql` (comments and all) is still what's
+ * sent to Postgres, since comments are harmless to actual execution.
+ */
+function stripCommentsAndLiterals(sql: string): string {
+  let out = "";
+  let i = 0;
+  const n = sql.length;
+
+  while (i < n) {
+    const ch = sql[i];
+    const next = sql[i + 1];
+
+    if (ch === "-" && next === "-") {
+      i += 2;
+      while (i < n && sql[i] !== "\n") i++;
+      continue;
+    }
+
+    if (ch === "/" && next === "*") {
+      let depth = 1;
+      i += 2;
+      while (i < n && depth > 0) {
+        if (sql[i] === "/" && sql[i + 1] === "*") {
+          depth++;
+          i += 2;
+        } else if (sql[i] === "*" && sql[i + 1] === "/") {
+          depth--;
+          i += 2;
+        } else {
+          i++;
+        }
+      }
+      continue;
+    }
+
+    if (ch === "'" || ch === '"') {
+      const quote = ch;
+      i++;
+      while (i < n) {
+        if (sql[i] === quote && sql[i + 1] === quote) {
+          i += 2; // escaped quote ('' or "") — still inside the literal
+        } else if (sql[i] === quote) {
+          i++;
+          break;
+        } else {
+          i++;
+        }
+      }
+      continue;
+    }
+
+    if (ch === "$") {
+      const tagMatch = /^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/.exec(sql.slice(i));
+      if (tagMatch) {
+        const tag = tagMatch[0];
+        const end = sql.indexOf(tag, i + tag.length);
+        if (end !== -1) {
+          i = end + tag.length;
+          continue;
+        }
+      }
+    }
+
+    out += ch;
+    i++;
+  }
+
+  return out;
+}
+
+/**
  * Validates that `sql` is exactly one `SELECT` statement: no semicolons (no
  * statement separators, so no stacking a second statement after one), and no
- * forbidden write/DDL keyword anywhere in the text. Deliberately strict and
- * keyword-based rather than a full SQL parser — false positives (rejecting
- * a legitimate query that happens to contain a forbidden word, e.g. in a
- * string literal) are an acceptable cost for a fail-fast app-layer barrier
- * that backs the role's own grants, not the only line of defense.
+ * forbidden write/DDL/procedural keyword or GUC-manipulating function call
+ * anywhere in the text. Every check runs against `stripCommentsAndLiterals`'s
+ * output, not the raw string — see that function's docstring for why
+ * (comments and string-literal contents are an evasion surface for naive
+ * text scanning otherwise). Still deliberately keyword/regex-based rather
+ * than a full SQL parser; a false positive (rejecting a legitimate query
+ * whose string literal happens to contain a forbidden word — now harmless,
+ * since literal contents are blanked before scanning) is an acceptable cost
+ * for a fail-fast app-layer barrier that backs the role's own grants, not
+ * the only line of defense.
  */
 export function validateSelectOnly(sql: string): QueryRejection | null {
   const trimmed = sql.trim();
@@ -96,16 +189,18 @@ export function validateSelectOnly(sql: string): QueryRejection | null {
     return { error: "rejected", message: "Query is empty." };
   }
 
+  const scan = stripCommentsAndLiterals(trimmed);
+
   // Reject any semicolon, including one trailing the single statement —
   // simplest way to guarantee "exactly one statement" without a parser.
-  if (trimmed.includes(";")) {
+  if (scan.includes(";")) {
     return {
       error: "rejected",
       message: "Multiple statements (or a trailing semicolon) are not allowed.",
     };
   }
 
-  if (!/^\s*select\b/i.test(trimmed)) {
+  if (!/^\s*select\b/i.test(scan)) {
     return {
       error: "rejected",
       message: "Only SELECT statements are allowed.",
@@ -114,7 +209,7 @@ export function validateSelectOnly(sql: string): QueryRejection | null {
 
   for (const keyword of FORBIDDEN_KEYWORDS) {
     const pattern = new RegExp(`\\b${keyword}\\b`, "i");
-    if (pattern.test(trimmed)) {
+    if (pattern.test(scan)) {
       return {
         error: "rejected",
         message: `Statement contains a disallowed keyword: ${keyword}.`,
@@ -124,7 +219,7 @@ export function validateSelectOnly(sql: string): QueryRejection | null {
 
   for (const fn of FORBIDDEN_FUNCTIONS) {
     const pattern = new RegExp(`\\b${fn}\\s*\\(`, "i");
-    if (pattern.test(trimmed)) {
+    if (pattern.test(scan)) {
       return {
         error: "rejected",
         message: `Statement contains a disallowed function call: ${fn}.`,
