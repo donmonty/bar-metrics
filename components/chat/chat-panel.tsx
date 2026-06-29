@@ -12,10 +12,12 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentPropsWithoutRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useChat } from "ai/react";
 import { Loader2Icon, MessageCircleIcon, SendIcon } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { resolveDateRange, resolveSucursalId } from "@/lib/dashboard/filters";
 import type { SucursalSummary } from "@/lib/db/nubebar";
@@ -29,6 +31,28 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+
+/** Minimal table/list styling — no Tailwind typography plugin in this repo. */
+const markdownComponents = {
+  table: (props: ComponentPropsWithoutRef<"table">) => (
+    <table className="my-1 w-full border-collapse text-left" {...props} />
+  ),
+  th: (props: ComponentPropsWithoutRef<"th">) => (
+    <th className="border-b px-2 py-1 font-medium" {...props} />
+  ),
+  td: (props: ComponentPropsWithoutRef<"td">) => (
+    <td className="border-b px-2 py-1" {...props} />
+  ),
+  ul: (props: ComponentPropsWithoutRef<"ul">) => (
+    <ul className="list-disc space-y-1 pl-5" {...props} />
+  ),
+  ol: (props: ComponentPropsWithoutRef<"ol">) => (
+    <ol className="list-decimal space-y-1 pl-5" {...props} />
+  ),
+  p: (props: ComponentPropsWithoutRef<"p">) => (
+    <p className="[&:not(:first-child)]:mt-2" {...props} />
+  ),
+};
 
 export function ChatPanel({
   sucursales,
@@ -91,7 +115,16 @@ export function ChatPanel({
                   : "mr-auto max-w-[85%] rounded-lg bg-muted px-3 py-2 text-sm text-foreground"
               }
             >
-              {message.content}
+              {message.role === "user" ? (
+                message.content
+              ) : (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              )}
             </div>
           ))}
           {isLoading && (
