@@ -130,3 +130,198 @@ describe("getMermaOverview tool error handling", () => {
     vi.resetModules();
   });
 });
+
+describeIfDb("getSalesSummary tool", () => {
+  it("calls the metric function with the session-derived sucursalId, never a model-supplied one", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getSalesSummary.execute(
+      { from: "2021-01-01", to: "2026-12-31" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).not.toHaveProperty("error");
+    expect(
+      "dailyRevenue" in result && Array.isArray(result.dailyRevenue),
+    ).toBe(true);
+  });
+
+  it("defaults to the dashboard's active range when the model omits dates", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "1990-01-01", to: "1990-01-02" },
+    });
+
+    const result = await tools.getSalesSummary.execute(
+      {},
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({ dailyRevenue: [], topRecetas: [] });
+  });
+
+  it("passes through an empty result for a range with zero Ventas", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getSalesSummary.execute(
+      { from: "1990-01-01", to: "1990-01-02" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({ dailyRevenue: [], topRecetas: [] });
+  });
+});
+
+describe("getSalesSummary tool error handling", () => {
+  it("returns a structured {error, message} object instead of throwing when the metric function throws", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/metrics/sales", () => ({
+      getSalesSummary: vi.fn().mockRejectedValue(new Error("connection refused")),
+    }));
+
+    const { createChatTools: createChatToolsWithMock } = await import("./tools");
+    const tools = createChatToolsWithMock({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getSalesSummary.execute(
+      {},
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({
+      error: "sales_summary_failed",
+      message: "connection refused",
+    });
+
+    vi.doUnmock("@/lib/metrics/sales");
+    vi.resetModules();
+  });
+});
+
+describeIfDb("getStockValue tool", () => {
+  it("calls the metric function with the session-derived sucursalId, never a model-supplied one", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getStockValue.execute(
+      {},
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).not.toHaveProperty("error");
+    expect("total" in result && "breakdown" in result).toBe(true);
+  });
+});
+
+describe("getStockValue tool error handling", () => {
+  it("returns a structured {error, message} object instead of throwing when the metric function throws", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/metrics/stock-value", () => ({
+      getStockValue: vi.fn().mockRejectedValue(new Error("connection refused")),
+    }));
+
+    const { createChatTools: createChatToolsWithMock } = await import("./tools");
+    const tools = createChatToolsWithMock({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getStockValue.execute(
+      {},
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({
+      error: "stock_value_failed",
+      message: "connection refused",
+    });
+
+    vi.doUnmock("@/lib/metrics/stock-value");
+    vi.resetModules();
+  });
+});
+
+describeIfDb("getProductosSinRegistro tool", () => {
+  it("calls the metric function with the session-derived sucursalId, never a model-supplied one", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getProductosSinRegistro.execute(
+      { from: "2021-01-01", to: "2026-12-31" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).not.toHaveProperty("error");
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("defaults to the dashboard's active range when the model omits dates", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "1990-01-01", to: "1990-01-02" },
+    });
+
+    const result = await tools.getProductosSinRegistro.execute(
+      {},
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual([]);
+  });
+
+  it("passes through an empty result for a range with zero unmatched lines", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getProductosSinRegistro.execute(
+      { from: "1990-01-01", to: "1990-01-02" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getProductosSinRegistro tool error handling", () => {
+  it("returns a structured {error, message} object instead of throwing when the metric function throws", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/metrics/productos-sin-registro", () => ({
+      getProductosSinRegistro: vi
+        .fn()
+        .mockRejectedValue(new Error("connection refused")),
+    }));
+
+    const { createChatTools: createChatToolsWithMock } = await import("./tools");
+    const tools = createChatToolsWithMock({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.getProductosSinRegistro.execute(
+      {},
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({
+      error: "productos_sin_registro_failed",
+      message: "connection refused",
+    });
+
+    vi.doUnmock("@/lib/metrics/productos-sin-registro");
+    vi.resetModules();
+  });
+});

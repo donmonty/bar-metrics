@@ -15,6 +15,12 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import { getMermaOverview, type MermaOverviewResult } from "@/lib/metrics/merma";
+import { getSalesSummary, type SalesSummaryResult } from "@/lib/metrics/sales";
+import { getStockValue, type StockValueResult } from "@/lib/metrics/stock-value";
+import {
+  getProductosSinRegistro,
+  type ProductoSinRegistroItem,
+} from "@/lib/metrics/productos-sin-registro";
 
 export type DashboardContext = {
   sucursalId: number;
@@ -93,6 +99,111 @@ export function createChatTools(context: DashboardContext) {
               err instanceof Error
                 ? err.message
                 : "No se pudo obtener el reporte de merma.",
+          };
+        }
+      },
+    }),
+
+    getSalesSummary: tool({
+      description:
+        "Returns the daily revenue trend and a top-Recetas-by-revenue " +
+        "ranking (with units sold) for the user's Sucursal over a date " +
+        "range. Omit from/to to use the dashboard's current date range.",
+      parameters: z.object({
+        from: z
+          .string()
+          .optional()
+          .describe(
+            "Start date as YYYY-MM-DD. Defaults to the dashboard's active range.",
+          ),
+        to: z
+          .string()
+          .optional()
+          .describe(
+            "End date as YYYY-MM-DD. Defaults to the dashboard's active range.",
+          ),
+      }),
+      execute: async ({
+        from,
+        to,
+      }): Promise<SalesSummaryResult | ToolError> => {
+        try {
+          const dateRange = resolveToolDateRange(context.dateRange, {
+            from,
+            to,
+          });
+          return await getSalesSummary(context.sucursalId, dateRange);
+        } catch (err) {
+          return {
+            error: "sales_summary_failed",
+            message:
+              err instanceof Error
+                ? err.message
+                : "No se pudo obtener el resumen de ventas.",
+          };
+        }
+      },
+    }),
+
+    getStockValue: tool({
+      description:
+        "Returns the current total stock value (point-in-time snapshot, " +
+        "not date-ranged) for the user's Sucursal, broken down by Almacén " +
+        "(Barra vs. Bodega).",
+      parameters: z.object({}),
+      execute: async (): Promise<StockValueResult | ToolError> => {
+        try {
+          return await getStockValue(context.sucursalId);
+        } catch (err) {
+          return {
+            error: "stock_value_failed",
+            message:
+              err instanceof Error
+                ? err.message
+                : "No se pudo obtener el valor de stock.",
+          };
+        }
+      },
+    }),
+
+    getProductosSinRegistro: tool({
+      description:
+        "Returns the top unmatched POS sales lines (productos sin " +
+        "registro) by revenue for the user's Sucursal over a date range — " +
+        "a data-quality/leakage signal for POS products without a " +
+        "matching Receta. Omit from/to to use the dashboard's current " +
+        "date range.",
+      parameters: z.object({
+        from: z
+          .string()
+          .optional()
+          .describe(
+            "Start date as YYYY-MM-DD. Defaults to the dashboard's active range.",
+          ),
+        to: z
+          .string()
+          .optional()
+          .describe(
+            "End date as YYYY-MM-DD. Defaults to the dashboard's active range.",
+          ),
+      }),
+      execute: async ({
+        from,
+        to,
+      }): Promise<ProductoSinRegistroItem[] | ToolError> => {
+        try {
+          const dateRange = resolveToolDateRange(context.dateRange, {
+            from,
+            to,
+          });
+          return await getProductosSinRegistro(context.sucursalId, dateRange);
+        } catch (err) {
+          return {
+            error: "productos_sin_registro_failed",
+            message:
+              err instanceof Error
+                ? err.message
+                : "No se pudo obtener los productos sin registro.",
           };
         }
       },
