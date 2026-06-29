@@ -325,3 +325,115 @@ describe("getProductosSinRegistro tool error handling", () => {
     vi.resetModules();
   });
 });
+
+/**
+ * `runAnalyticalQuery` tool tests (issue #51), mirroring the pattern above:
+ * integration coverage against the live `nubebar_agent` role (gated on
+ * `NUBEBAR_AGENT_DATABASE_URL`, mirroring `lib/db/nubebar/agent-rls.test.ts`),
+ * plus a `vi.doMock`-based test for the structured-error path. The seam
+ * itself (`lib/db/nubebar-agent.ts`) already owns the guardrail logic and
+ * its own unit tests (issue #49) — these tests only exercise the thin
+ * wrapper: does it call the seam with the session-derived scope, and does
+ * it surface the seam's `{ error, message }` shape unchanged.
+ */
+const describeIfAgentDb = process.env.NUBEBAR_AGENT_DATABASE_URL
+  ? describe
+  : describe.skip;
+
+describeIfAgentDb("runAnalyticalQuery tool", () => {
+  it("runs a model-supplied SELECT scoped to the session-derived Sucursal", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.runAnalyticalQuery.execute(
+      { sql: "SELECT id FROM core_sucursal" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).not.toHaveProperty("error");
+    expect("rows" in result && Array.isArray(result.rows)).toBe(true);
+    if ("rows" in result) {
+      for (const row of result.rows) {
+        expect(row.id).toBe(REAL_SUCURSAL_ID);
+      }
+    }
+  });
+
+  it("returns a structured rejection for a non-SELECT statement, never throwing", async () => {
+    const tools = createChatTools({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.runAnalyticalQuery.execute(
+      { sql: "DELETE FROM core_venta" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({
+      error: "rejected",
+      message: "Only SELECT statements are allowed.",
+    });
+  });
+});
+
+describe("runAnalyticalQuery tool error handling", () => {
+  it("returns a structured {error, message} object instead of throwing when the seam reports a db_error", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/db/nubebar-agent", () => ({
+      runNubebarAgentQuery: vi.fn().mockResolvedValue({
+        error: "db_error",
+        message: "connection refused",
+      }),
+    }));
+
+    const { createChatTools: createChatToolsWithMock } = await import("./tools");
+    const tools = createChatToolsWithMock({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    const result = await tools.runAnalyticalQuery.execute(
+      { sql: "SELECT 1" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(result).toEqual({
+      error: "db_error",
+      message: "connection refused",
+    });
+
+    vi.doUnmock("@/lib/db/nubebar-agent");
+    vi.resetModules();
+  });
+
+  it("calls the seam with the session-derived Sucursal scope as an array, never a model-supplied value", async () => {
+    vi.resetModules();
+    const runNubebarAgentQuery = vi.fn().mockResolvedValue({ rows: [] });
+    vi.doMock("@/lib/db/nubebar-agent", () => ({
+      runNubebarAgentQuery,
+    }));
+
+    const { createChatTools: createChatToolsWithMock } = await import("./tools");
+    const tools = createChatToolsWithMock({
+      sucursalId: REAL_SUCURSAL_ID,
+      dateRange: { from: "2021-01-01", to: "2026-12-31" },
+    });
+
+    // The Zod schema has no sucursalId field — the model cannot supply one.
+    await tools.runAnalyticalQuery.execute(
+      { sql: "SELECT 1" },
+      { toolCallId: "test", messages: [] },
+    );
+
+    expect(runNubebarAgentQuery).toHaveBeenCalledWith(
+      [REAL_SUCURSAL_ID],
+      "SELECT 1",
+    );
+
+    vi.doUnmock("@/lib/db/nubebar-agent");
+    vi.resetModules();
+  });
+});
