@@ -13,9 +13,13 @@ import { ACCENTS, CANDIDATES } from "./palettes";
 export function VariantSwitcher({
   current,
   accent,
+  fg,
+  neutral,
 }: {
   current: string;
   accent?: string;
+  fg?: "white" | "black";
+  neutral?: "cool";
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -69,6 +73,18 @@ export function VariantSwitcher({
     return `?${search.toString()}`;
   }
 
+  function toggleHref(key: string, value: string, active: boolean) {
+    const search = new URLSearchParams(params.toString());
+    if (active) search.delete(key);
+    else search.set(key, value);
+    return `?${search.toString()}`;
+  }
+
+  const pill = (active: boolean) =>
+    active
+      ? "rounded-full bg-neutral-900 px-2 py-0.5 text-white"
+      : "rounded-full px-2 py-0.5 hover:bg-neutral-200";
+
   const candidate = CANDIDATES[index]!;
 
   return (
@@ -117,6 +133,20 @@ export function VariantSwitcher({
             {a.name}
           </a>
         ))}
+      </div>
+      <div className="flex items-center gap-0.5 border-t border-neutral-200 pt-1 text-xs">
+        <a
+          href={toggleHref("fg", "white", fg === "white")}
+          className={pill(fg === "white")}
+        >
+          white label
+        </a>
+        <a
+          href={toggleHref("neutral", "cool", neutral === "cool")}
+          className={pill(neutral === "cool")}
+        >
+          cool neutrals
+        </a>
       </div>
     </div>
   );

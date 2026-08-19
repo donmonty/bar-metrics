@@ -16,17 +16,33 @@ import { Suspense } from "react";
 
 import { ContrastReadout } from "./contrast-readout";
 import { Gallery } from "./gallery";
-import { accentFor, candidateFor, withAccent } from "./palettes";
+import {
+  FOREGROUNDS,
+  accentFor,
+  candidateFor,
+  withAccent,
+  withOptions,
+} from "./palettes";
 import { VariantSwitcher } from "./variant-switcher";
 
 export default async function PalettePocPage({
   searchParams,
 }: {
-  searchParams: Promise<{ variant?: string; accent?: string }>;
+  searchParams: Promise<{
+    variant?: string;
+    accent?: string;
+    fg?: string;
+    neutral?: string;
+  }>;
 }) {
-  const { variant, accent } = await searchParams;
+  const { variant, accent, fg, neutral } = await searchParams;
   const chosenAccent = accentFor(accent);
-  const candidate = withAccent(candidateFor(variant), chosenAccent);
+  const chosenFg = fg === "white" || fg === "black" ? fg : undefined;
+  const chosenNeutral = neutral === "cool" ? "cool" : undefined;
+  const candidate = withOptions(
+    withAccent(candidateFor(variant), chosenAccent),
+    { fg: chosenFg, neutral: chosenNeutral },
+  );
 
   return (
     <div
@@ -44,6 +60,23 @@ export default async function PalettePocPage({
           <p className="max-w-2xl text-sm text-muted-foreground">
             {candidate.thesis}
           </p>
+          {chosenFg && (
+            <p className="max-w-2xl border-l-2 border-l-primary pl-3 text-sm">
+              <span className="font-medium">{FOREGROUNDS[chosenFg].name}:</span>{" "}
+              <span className="text-muted-foreground">
+                {FOREGROUNDS[chosenFg].note}
+              </span>
+            </p>
+          )}
+          {chosenNeutral && (
+            <p className="max-w-2xl border-l-2 border-l-primary pl-3 text-sm">
+              <span className="font-medium">Cool neutrals:</span>{" "}
+              <span className="text-muted-foreground">
+                Surfaces carry oklch chroma 0.008 at hue 240, as the
+                reference&apos;s ground does. Text stays chroma-0.
+              </span>
+            </p>
+          )}
           {chosenAccent && (
             <p className="max-w-2xl border-l-2 border-l-primary pl-3 text-sm">
               <span className="font-medium">
@@ -83,7 +116,12 @@ export default async function PalettePocPage({
       </div>
 
       <Suspense fallback={null}>
-        <VariantSwitcher current={candidate.key} accent={chosenAccent?.key} />
+        <VariantSwitcher
+          current={candidate.key}
+          accent={chosenAccent?.key}
+          fg={chosenFg}
+          neutral={chosenNeutral}
+        />
       </Suspense>
     </div>
   );

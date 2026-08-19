@@ -243,3 +243,60 @@ export function withAccent(
     },
   };
 }
+
+/**
+ * The two remaining calls, wired as switches so they're judged rather than
+ * argued (`?fg=` and `?neutral=`).
+ */
+
+/** `--primary-foreground`: the reference's white CTA label vs near-black. */
+export const FOREGROUNDS = {
+  black: {
+    name: "Near-black label",
+    note: "Clears AA on every orange in this family. What all three candidates ship.",
+    value: "oklch(0.16 0 0)",
+  },
+  white: {
+    name: "White label",
+    note: "What the reference does. 3.17:1 on the reference orange — fails AA for a 14px label, which is what `Button` renders.",
+    value: "oklch(1 0 0)",
+  },
+} as const;
+
+/**
+ * Neutral cast. The reference's ground samples at ~oklch(0.21 0.008 240) —
+ * faintly COOL, moving the greys away from the orange rather than toward it.
+ * Only the surfaces take the cast; `--foreground` stays chroma-0 so body text
+ * reads as neutral white, as it does in the reference.
+ */
+export const NEUTRAL_SURFACES = [
+  "--background",
+  "--card",
+  "--popover",
+  "--secondary",
+  "--muted",
+  "--accent",
+] as const;
+
+export function withOptions(
+  candidate: Candidate,
+  { fg, neutral }: { fg?: keyof typeof FOREGROUNDS; neutral?: "cool" },
+): Candidate {
+  const tokens = { ...candidate.tokens };
+
+  if (fg) tokens["--primary-foreground"] = FOREGROUNDS[fg].value;
+
+  if (neutral === "cool") {
+    for (const name of NEUTRAL_SURFACES) {
+      const value = tokens[name];
+      if (!value) continue;
+      // oklch(L 0 0) -> oklch(L 0.008 240). Only touches chroma-0 surfaces.
+      tokens[name] = value.replace(
+        /^oklch\(([\d.]+)\s+0\s+0\)$/,
+        "oklch($1 0.008 240)",
+      );
+    }
+  }
+
+  return { ...candidate, tokens };
+}
