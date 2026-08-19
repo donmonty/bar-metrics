@@ -12,6 +12,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "check:contrast": "tsx scripts/check-contrast.ts",
     "postinstall": "prisma generate && prisma generate --config prisma.nubebar.config.ts",
     "db:app:generate": "prisma generate",
     "db:app:migrate:dev": "prisma migrate dev",
