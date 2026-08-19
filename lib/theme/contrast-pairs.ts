@@ -47,10 +47,60 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
     minimum: AA_TEXT,
   },
   {
+    label: "muted text on a card",
+    foreground: "--muted-foreground",
+    background: "--card",
+    minimum: AA_TEXT,
+  },
+  {
     label: "text on a primary button",
     foreground: "--primary-foreground",
     background: "--primary",
     minimum: AA_TEXT,
+  },
+  {
+    label: "text on a popover",
+    foreground: "--popover-foreground",
+    background: "--popover",
+    minimum: AA_TEXT,
+  },
+  // Orange carries meaning as text, not just as a button fill (issue #62
+  // gave the accent to headline numbers), so it is held to the text floor.
+  {
+    label: "orange as a number on a card",
+    foreground: "--primary",
+    background: "--card",
+    minimum: AA_TEXT,
+  },
+  // WCAG 1.4.11 asks 3:1 of anything identifying a CONTROL's boundary.
+  // `--input` is exactly that — `Input`, `SelectTrigger`, and in dark mode the
+  // `outline` Button, which switches to `dark:border-input`. `--border` is
+  // deliberately NOT asserted: it draws card edges, the header rule and table
+  // dividers, all decorative, and holding it to 3:1 would demand a near-white
+  // hairline on every card. That distinction is issue #62's call.
+  {
+    label: "input boundary on a card",
+    foreground: "--input",
+    background: "--card",
+    minimum: AA_NON_TEXT,
+  },
+  {
+    label: "input boundary on the page",
+    foreground: "--input",
+    background: "--background",
+    minimum: AA_NON_TEXT,
+  },
+  {
+    label: "focus ring on the page",
+    foreground: "--ring",
+    background: "--background",
+    minimum: AA_NON_TEXT,
+  },
+  {
+    label: "focus ring on a card",
+    foreground: "--ring",
+    background: "--card",
+    minimum: AA_NON_TEXT,
   },
   // Chart fills are graphical objects, so they sit in the 3:1 bucket. Charts
   // render inside cards, which is the ground they have to stand out from.
