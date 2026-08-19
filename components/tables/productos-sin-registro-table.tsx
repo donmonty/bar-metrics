@@ -42,14 +42,14 @@ export function ProductosSinRegistroTable({
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="border-b text-left text-muted-foreground">
+        <tr className="border-b border-rule text-left text-muted-foreground">
           <th className="py-2 pr-4 font-medium">Código POS</th>
           <th className="py-2 pr-4 font-medium">Producto</th>
           <th className="py-2 pr-4 font-medium text-right">Ocurrencias</th>
           <th className="py-2 font-medium text-right">Importe</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-border">
+      <tbody className="divide-y divide-rule">
         {data.map((item) => (
           <tr key={item.codigoPos}>
             <td className="py-2 pr-4 font-mono">{item.codigoPos}</td>

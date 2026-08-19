@@ -38,11 +38,18 @@ export function StockValueSummary({
     <div className="space-y-4">
       <div>
         <p className="text-sm text-muted-foreground">Valor de inventario</p>
-        <p className="text-4xl font-semibold tabular-nums">
+        {/* The one place the accent is spent on a number (#62's ration,
+            confirmed closed here by #64): this is the app's only headline
+            figure. Page `<h2>`s and the landing page's `CardTitle` links
+            stay `--foreground`. Scores 5.88:1 on a card and 6.44:1 on the
+            page, both asserted in `CONTRAST_PAIRS`. */}
+        <p className="text-4xl font-semibold text-primary tabular-nums">
           {currencyFormatter.format(total)}
         </p>
       </div>
-      <ul className="divide-y divide-border rounded-lg border">
+      {/* Row rules take `--rule` (#69); the container's own edge stays on
+          `--border` with the rest of the app's edges. */}
+      <ul className="divide-y divide-rule rounded-lg border">
         {breakdown.map((item) => (
           <li
             key={item.tipo}
