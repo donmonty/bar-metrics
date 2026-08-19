@@ -1,7 +1,7 @@
 /**
  * Behavior-level test for `MermaChart` (issue #17) — asserts the prop
  * contract, not Recharts' internal rendering: sort order is passed through
- * as given (the chart trusts the caller's order, mirroring #23's POC), the
+ * as given (the chart trusts the caller's order, mirroring #23's conventions), the
  * top-N cap + expansion control works, and the named empty state renders for
  * an empty array. Needs jsdom; `@vitest-environment` overrides the project's
  * default `node` test environment for this file only.
