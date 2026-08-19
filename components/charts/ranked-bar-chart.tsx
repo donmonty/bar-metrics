@@ -8,11 +8,19 @@
  *    `components/ui/chart.tsx`). Don't configure Recharts colors/fonts by
  *    hand — `ChartContainer` injects `--color-<key>` CSS vars per series
  *    from the config, and Recharts elements reference them via
- *    `fill="var(--color-<key>)"`. The grayscale `--chart-1..5` tokens in
- *    `app/globals.css` are deliberately low-saturation (this repo's
- *    `neutral`/`base-nova` shadcn style) but must still clear a real
- *    contrast threshold against the white chart background — don't
- *    reintroduce a near-white fill.
+ *    `fill="var(--color-<key>)"`. `--chart-1..5` in `app/globals.css` are
+ *    the Ember ramp (issue #63): one orange hue, five steps ASCENDING in
+ *    lightness on a near-black card. Two rules come with it —
+ *      - A single-series chart uses `--chart-3`, the step that is the brand
+ *        accent itself, not `--chart-1`. The ramp is an ordered lightness
+ *        scale, so the accent sits in its middle.
+ *      - Ranked bars stay FLAT. Every bar in a ranked chart takes the same
+ *        step; #63 decided a bar's colour should not encode its rank when
+ *        its length already does. The ramp is there for multi-series charts,
+ *        not for indexing per row.
+ *    Every step clears 3:1 against `--card` and `--background`, and there is
+ *    a hard lightness floor around L 0.51 below which an orange fill cannot
+ *    — don't darken a step to make it "recede".
  * 2. Tooltip: always render `<ChartTooltip content={<ChartTooltipContent />} />`
  *    inside the chart instead of Recharts' default tooltip. Pass
  *    `formatter`/`labelFormatter` for metric-specific value shaping (e.g. the
@@ -42,10 +50,7 @@
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-import {
-  CHART_Y_AXIS_WIDTH_PX,
-  getChartHeightPx,
-} from "./chart-layout";
+import { CHART_Y_AXIS_WIDTH_PX, getChartHeightPx } from "./chart-layout";
 import {
   ChartConfig,
   ChartContainer,
@@ -69,7 +74,7 @@ export interface RankedBarChartProps {
 const chartConfig: ChartConfig = {
   value: {
     label: "Valor",
-    color: "var(--chart-1)",
+    color: "var(--chart-3)",
   },
 };
 

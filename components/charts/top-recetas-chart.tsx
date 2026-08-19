@@ -43,7 +43,7 @@ export interface TopRecetasChartProps {
 const chartConfig: ChartConfig = {
   importe: {
     label: "Ingresos",
-    color: "var(--chart-1)",
+    color: "var(--chart-3)",
   },
 };
 

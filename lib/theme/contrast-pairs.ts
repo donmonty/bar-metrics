@@ -47,19 +47,89 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
     minimum: AA_TEXT,
   },
   {
+    label: "muted text on a card",
+    foreground: "--muted-foreground",
+    background: "--card",
+    minimum: AA_TEXT,
+  },
+  {
     label: "text on a primary button",
     foreground: "--primary-foreground",
     background: "--primary",
     minimum: AA_TEXT,
   },
-  // Chart fills are graphical objects, so they sit in the 3:1 bucket. Charts
-  // render inside cards, which is the ground they have to stand out from.
-  ...CHART_TOKENS.map((chart) => ({
-    label: `${chart.replace("--", "")} fill on a card`,
-    foreground: chart,
+  {
+    label: "text on a popover",
+    foreground: "--popover-foreground",
+    background: "--popover",
+    minimum: AA_TEXT,
+  },
+  // Orange carries meaning as text, not just as a button fill (issue #62
+  // gave the accent to headline numbers), so it is held to the text floor.
+  {
+    label: "orange as a number on a card",
+    foreground: "--primary",
+    background: "--card",
+    minimum: AA_TEXT,
+  },
+  // WCAG 1.4.11 asks 3:1 of anything identifying a CONTROL's boundary.
+  // `--input` is exactly that — `Input`, `SelectTrigger`, and in dark mode the
+  // `outline` Button, which switches to `dark:border-input`. `--border` is
+  // deliberately NOT asserted: it draws card edges, the header rule and table
+  // dividers, all decorative, and holding it to 3:1 would demand a near-white
+  // hairline on every card. That distinction is issue #62's call.
+  //
+  // Since issue #66 that list is literal, not aspirational: `Card`,
+  // `PopoverContent` and `SelectContent` used to draw their own edge with a
+  // hardcoded `ring-1 ring-foreground/10` (10% white, 1.29:1 on `--card`) that
+  // no token could reach. They now carry `ring-1 ring-border`, so every edge in
+  // the app resolves here and the ladder stays the only real separator. Do not
+  // add a `--border` pair to "fix" the faint result — 1.23:1 is the intended
+  // look, and asserting 3:1 would force back the visible edge #62 rejected.
+  {
+    label: "input boundary on a card",
+    foreground: "--input",
     background: "--card",
     minimum: AA_NON_TEXT,
-  })),
+  },
+  {
+    label: "input boundary on the page",
+    foreground: "--input",
+    background: "--background",
+    minimum: AA_NON_TEXT,
+  },
+  {
+    label: "focus ring on the page",
+    foreground: "--ring",
+    background: "--background",
+    minimum: AA_NON_TEXT,
+  },
+  {
+    label: "focus ring on a card",
+    foreground: "--ring",
+    background: "--card",
+    minimum: AA_NON_TEXT,
+  },
+  // Chart fills are graphical objects, so they sit in the 3:1 bucket. Both
+  // grounds are real and both are asserted: issue #64's inventory found that
+  // `Card` renders on only two pages, so all four drill-down pages put their
+  // charts straight on `--background` — the page is the COMMON case, the card
+  // the exception. #63 measured the ramp against both; these ten pairs are
+  // that measurement made standing.
+  ...CHART_TOKENS.flatMap((chart) => [
+    {
+      label: `${chart.replace("--", "")} fill on a card`,
+      foreground: chart,
+      background: "--card",
+      minimum: AA_NON_TEXT,
+    },
+    {
+      label: `${chart.replace("--", "")} fill on the page`,
+      foreground: chart,
+      background: "--background",
+      minimum: AA_NON_TEXT,
+    },
+  ]),
 ];
 
 /**
@@ -71,9 +141,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
  * here — a pair leaves the list by passing, never by being deleted.
  */
 export const KNOWN_FAILURES: Record<string, string> = {
-  // The shipped dark ramp is shadcn's neutral greys, which collapse into the
-  // card surface. The orange ramp that replaces them is issue #63.
-  "chart-3 fill on a card": "#63 — orange chart ramp",
-  "chart-4 fill on a card": "#63 — orange chart ramp",
-  "chart-5 fill on a card": "#63 — orange chart ramp",
+  // Empty, and worth keeping empty. The three chart-ramp entries that lived
+  // here left by passing: issue #63's Ember ramp scores 3.65 / 4.62 / 5.88 /
+  // 8.07 / 11.33 on a card. A pair leaves this list by passing, never by
+  // being deleted.
 };

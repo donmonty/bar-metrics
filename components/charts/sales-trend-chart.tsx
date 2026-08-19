@@ -28,6 +28,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export const TREND_HEIGHT_PX = 256;
 
+const TREND_FILL_ID = "sales-trend-fill";
+
 export interface SalesTrendChartDatum {
   fecha: string;
   importe: number;
@@ -41,7 +43,7 @@ export interface SalesTrendChartProps {
 const chartConfig: ChartConfig = {
   importe: {
     label: "Ingresos",
-    color: "var(--chart-1)",
+    color: "var(--chart-3)",
   },
 };
 
@@ -64,22 +66,50 @@ export function SalesTrendChart({ data, emptyMessage }: SalesTrendChartProps) {
       style={{ height: TREND_HEIGHT_PX }}
     >
       <AreaChart data={data} margin={{ left: 12, right: 12 }}>
+        {/* The only filled area in the app (#63). A flat fillOpacity reads as
+            a slab on the dark ground, so the fill fades out downward and the
+            stroke is thickened to carry the line on its own. The gradient id
+            is module-scoped rather than generated — there is exactly one of
+            these charts on a page.
+
+            The stops are the effective opacities. Recharts applies its own
+            default `fillOpacity` of 0.6 on top of a fill when none is given,
+            which would silently scale them; `fillOpacity={1}` takes that back
+            so what is written here is what renders. */}
+        <defs>
+          <linearGradient id={TREND_FILL_ID} x1="0" y1="0" x2="0" y2="1">
+            <stop
+              offset="0%"
+              stopColor="var(--color-importe)"
+              stopOpacity={0.27}
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--color-importe)"
+              stopOpacity={0.012}
+            />
+          </linearGradient>
+        </defs>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="fecha" tickLine={false} axisLine={false} />
         <YAxis tickLine={false} axisLine={false} width={60} />
         <ChartTooltip
           content={
             <ChartTooltipContent
-              formatter={(value) => [`$${Number(value).toFixed(2)}`, "Ingresos"]}
+              formatter={(value) => [
+                `$${Number(value).toFixed(2)}`,
+                "Ingresos",
+              ]}
             />
           }
         />
         <Area
           dataKey="importe"
           type="monotone"
-          fill="var(--color-importe)"
-          fillOpacity={0.2}
+          fill={`url(#${TREND_FILL_ID})`}
+          fillOpacity={1}
           stroke="var(--color-importe)"
+          strokeWidth={2}
         />
       </AreaChart>
     </ChartContainer>
@@ -88,6 +118,9 @@ export function SalesTrendChart({ data, emptyMessage }: SalesTrendChartProps) {
 
 export function SalesTrendChartSkeleton() {
   return (
-    <Skeleton className="w-full aspect-auto" style={{ height: TREND_HEIGHT_PX }} />
+    <Skeleton
+      className="w-full aspect-auto"
+      style={{ height: TREND_HEIGHT_PX }}
+    />
   );
 }

@@ -5,129 +5,214 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    /* Contrast is no longer judged by hand: `npm run check:contrast` scores
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  /* Contrast is no longer judged by hand: `npm run check:contrast` scores
        every asserted pair in this file, and lib/theme/contrast.test.ts holds
        the palette to WCAG AA on every run. chart-1 was darkened from
        oklch(0.87 0 0) for the thin bar fills charts use it for. */
-    --chart-1: oklch(0.45 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.45 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  /* Light-mode counterparts of the dark grid stroke (#63) and sheet scrim
+     (#67). Light mode is out of scope for the re-skin, but leaving these
+     undefined here would make `stroke-(--chart-grid)` and `bg-(--overlay)`
+     resolve to nothing outside `.dark`. */
+  --chart-grid: oklch(0 0 0 / 10%);
+  --overlay: oklch(0 0 0 / 50%);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+  /* The dark-and-orange identity (issue #62, map #59). These values are
+       NOT shadcn registry output any more — the neutral ladder and the accent
+       were pinned on a prototype that rendered candidate palettes on the real
+       components, and every pair below is held to WCAG AA by
+       `lib/theme/contrast.test.ts`. Re-run `npm run check:contrast` after
+       touching anything here; do not eyeball it.
+
+       Candidates and the reasoning: issue #62. Full candidate set preserved
+       on branch `prototype/62-palette-candidates`.
+
+       Three things here are deliberate and easy to "fix" by mistake:
+
+       1. The surface ladder separates by LIGHTNESS, not by a visible edge —
+          0.115 page / 0.185 card / 0.225 popover. The old palette put card at
+          0.205 against a 0.145 page, which is why cards read as invisible.
+          `--border` is correspondingly quiet (8%); raising it re-adds an edge
+          the ladder was chosen to do without. Since #66 it is the app's ONLY
+          edge: `Card`, `PopoverContent` and `SelectContent` used to bypass it
+          with a hardcoded `ring-1 ring-foreground/10` and now use
+          `ring-1 ring-border`.
+
+       2. Surfaces carry a faint COOL chroma (0.008 at hue 240) while all
+          foregrounds stay chroma-0. This is the reference's own move: the
+          greys lean away from the orange, which makes the accent read warmer
+          without spending chroma on it. It shifts every contrast ratio by
+          less than 0.03.
+
+       3. `--input` is 36% white, not shadcn's 15%. It draws the boundary of
+          `Input`, `SelectTrigger` and — in dark mode — the `outline` Button
+          (`dark:border-input`), so WCAG 1.4.11 asks 3:1 of it. At 15% it
+          scores 1.4:1. `--border` is decorative and carries no such floor. */
+  --background: oklch(0.115 0.008 240);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.185 0.008 240);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.225 0.008 240);
+  --popover-foreground: oklch(0.985 0 0);
+  /* The reference orange verbatim, oklch(0.678 0.208 38). Chroma sits just
+       under the sRGB ceiling for this lightness (0.214); pushing lightness up
+       collapses that ceiling fast — at L 0.755 it is only 0.153 — so a
+       "brighter" orange here silently gets clamped into a weaker one.
+       The label is near-black because white scores 3.17:1 on this orange and
+       only clears AA below L 0.585, by which point it is no longer this
+       colour. The reference's own white-on-orange CTA fails AA. */
+  --primary: oklch(0.678 0.208 38);
+  --primary-foreground: oklch(0.16 0 0);
+  --secondary: oklch(0.265 0.008 240);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.265 0.008 240);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.265 0.008 240);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 36%);
+  --ring: oklch(0.678 0.208 38);
+  /* The Ember ramp (issue #63). Single hue 38, five steps separated by
+       LIGHTNESS, ascending — 3.65 / 4.62 / 5.88 / 8.07 / 11.33 against
+       `--card`, and every step also clears 3:1 against `--background` for
+       charts rendered outside a card.
+
+       The floor is real and was measured, not guessed: a chart fill is a
+       graphical object, so it owes 3:1 on the card, and for this hue that
+       puts a LIGHTNESS FLOOR at roughly L 0.51 — oklch(0.50 0.10 38) scores
+       2.98, oklch(0.55 0.10 38) scores 3.67. Chroma barely moves the number.
+       So there is no room below the accent to fade a series out into; the
+       ramp can only run upward. Do not "balance" this by darkening step 1.
+
+       Chroma stays under the sRGB ceiling for each step's lightness at this
+       hue (L 0.555 → 0.234, L 0.755 → 0.148, L 0.845 → 0.085). Over the
+       ceiling the browser silently clamps the step into a duller one.
+
+       `--chart-3` IS the accent, and it is the step a single-series chart
+       uses (see `components/charts/sales-trend-chart.tsx`) — the ramp is an
+       ordered lightness scale, so the brand orange sits in its middle rather
+       than at either end. Ranked bars deliberately stay flat: #63 decided a
+       bar's colour should not encode its rank when its length already does. */
+  --chart-1: oklch(0.555 0.16 38);
+  --chart-2: oklch(0.615 0.185 38);
+  --chart-3: oklch(0.678 0.208 38);
+  --chart-4: oklch(0.755 0.145 38);
+  --chart-5: oklch(0.845 0.08 38);
+  /* Grid lines in `ChartContainer`. Was `--border` at 50% — 4% white, which
+       is invisible on a 0.185 card. #63 raised it to 10%, deliberately
+       louder than `--border`: a card edge is decorative, a grid line is
+       something a reader is meant to follow across a chart. */
+  --chart-grid: oklch(1 0 0 / 10%);
+  /* The scrim behind a `Sheet` (issue #67). `sheet.tsx` hardcoded
+     `bg-black/10`, which no token could reach and which barely registers on a
+     0.115 page: it drops the content behind it to 0.79x luminance, so the chat
+     panel opened with no sense of a layer above the page. At 50% black the
+     page falls to 0.61x, a card to 0.46x and text to 0.21x, while the panel
+     itself stays at `--popover` (0.225) — the separation comes from the ground
+     dropping, not from the panel rising, which is the same lightness-ladder
+     move the rest of the palette makes.
+
+     Black rather than `--background` at some alpha: `--background` IS the page,
+     so scrimming with it dims the content but leaves the page itself untouched,
+     and the panel gains nothing to stand out from. */
+  --overlay: oklch(0 0 0 / 50%);
+  /* Unused — the app has no sidebar (map #59 rules a nav restructure out of
+       scope). Kept in step with the ladder so they aren't a stale trap. */
+  --sidebar: oklch(0.185 0.008 240);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.678 0.208 38);
+  --sidebar-primary-foreground: oklch(0.16 0 0);
+  --sidebar-accent: oklch(0.265 0.008 240);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.678 0.208 38);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
 }
