@@ -7,6 +7,9 @@
  * pairs that never render together.
  */
 
+import { tokenContrast, type Wash } from "./contrast";
+import { token, type TokenSet } from "./tokens";
+
 /** WCAG AA: 4.5:1 for body text, 3:1 for large text and graphical objects. */
 export const AA_TEXT = 4.5;
 export const AA_NON_TEXT = 3;
@@ -17,7 +20,29 @@ export type ContrastPair = {
   foreground: string;
   background: string;
   minimum: number;
+  /**
+   * Set when the background is not the token itself but a translucent wash of
+   * it — `bg-<token>/<alpha>` — over an opaque surface. Scored on the
+   * composite, since that is the colour the reader meets.
+   */
+  wash?: Wash;
 };
+
+/**
+ * Score one pair against a token set. The suite and `check:contrast` both go
+ * through here so a wash can't be composited one way in the assertion and
+ * another way in the report.
+ */
+export function scorePair(tokens: TokenSet, pair: ContrastPair): number {
+  return tokenContrast(
+    token(tokens, pair.foreground),
+    token(tokens, pair.background),
+    pair.wash && {
+      alpha: pair.wash.alpha,
+      over: token(tokens, pair.wash.over),
+    },
+  );
+}
 
 const CHART_TOKENS = [
   "--chart-1",
@@ -130,6 +155,39 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
       minimum: AA_NON_TEXT,
     },
   ]),
+  // The chat panel (issue #68). Its message list is a WELL: the list drops to
+  // `--card` while the panel's own chrome stays at `--popover`, so both bubble
+  // kinds rise off a ground one rung below them instead of sitting 0.04 from
+  // the sheet they're on. That makes `--muted` and the orange wash into
+  // backgrounds for the first time, which is what these two pairs assert.
+  //
+  // Note the well itself is NOT asserted against the panel: surface-vs-surface
+  // this far down the scale compresses to nothing as a WCAG ratio (the well
+  // reads 1.09:1 on the panel, the assistant bubble 1.22:1 on the well) — the
+  // same measurement trap #67 hit with `--overlay`. The separation that matters
+  // was measured as a luminance ratio and lives in the ticket; what WCAG has an
+  // opinion about is the text, which is what sits here.
+  {
+    label: "text in an assistant chat bubble",
+    foreground: "--foreground",
+    background: "--muted",
+    minimum: AA_TEXT,
+  },
+  // The user bubble is the accent at a fraction of its weight, not a slab of
+  // it: `bg-primary/20` over the well, with an opaque `--primary` left rule.
+  // #62 rationed the accent to `--primary`, `--ring` and one headline number,
+  // and a solid `bg-primary` bubble — which is what this was — made a long
+  // user message the loudest orange surface in the app.
+  //
+  // The rule itself needs no pair of its own: `--primary` on `--card` is
+  // already asserted above as "orange as a number on a card".
+  {
+    label: "text in a user chat bubble",
+    foreground: "--foreground",
+    background: "--primary",
+    wash: { alpha: 0.2, over: "--card" },
+    minimum: AA_TEXT,
+  },
 ];
 
 /**

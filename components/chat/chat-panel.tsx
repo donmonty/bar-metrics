@@ -99,7 +99,16 @@ export function ChatPanel({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-4">
+        {/* The message list is a WELL (issue #68): it drops to `--card` while
+            the header and the composer stay on the sheet's own `--popover`.
+            Bubbles used to sit on that same `--popover` ground, 0.04 lightness
+            from it, so an assistant bubble barely read as a separate object.
+            Dropping the ground rather than raising the bubble is the ladder
+            move #62 and #67 both make, and it needs no new token: measured as
+            a luminance ratio (a WCAG ratio compresses to nothing this far down
+            the scale), an assistant bubble goes from 1.68x its ground to
+            2.98x. */}
+        <div className="flex-1 space-y-3 overflow-y-auto bg-card px-4 py-3">
           {messages.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Aún no hay mensajes. Pregunta algo como &ldquo;¿cuál es la
@@ -109,9 +118,15 @@ export function ChatPanel({
           {messages.map((message) => (
             <div
               key={message.id}
+              // The user side keeps the orange but spends far less of it:
+              // `bg-primary` solid made a long message the loudest surface in
+              // the app, against #62's ration of the accent to `--primary`,
+              // `--ring` and one headline number. At 20% over the well it is a
+              // warm tint (3.49x the ground) that the opaque left rule marks
+              // as the accent; the assistant side stays neutral at `--muted`.
               className={
                 message.role === "user"
-                  ? "ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
+                  ? "ml-auto max-w-[85%] rounded-lg rounded-l-sm border-l-2 border-primary bg-primary/20 px-3 py-2 text-sm text-foreground"
                   : "mr-auto max-w-[85%] rounded-lg bg-muted px-3 py-2 text-sm text-foreground"
               }
             >
