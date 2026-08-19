@@ -110,14 +110,26 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
     background: "--card",
     minimum: AA_NON_TEXT,
   },
-  // Chart fills are graphical objects, so they sit in the 3:1 bucket. Charts
-  // render inside cards, which is the ground they have to stand out from.
-  ...CHART_TOKENS.map((chart) => ({
-    label: `${chart.replace("--", "")} fill on a card`,
-    foreground: chart,
-    background: "--card",
-    minimum: AA_NON_TEXT,
-  })),
+  // Chart fills are graphical objects, so they sit in the 3:1 bucket. Both
+  // grounds are real and both are asserted: issue #64's inventory found that
+  // `Card` renders on only two pages, so all four drill-down pages put their
+  // charts straight on `--background` — the page is the COMMON case, the card
+  // the exception. #63 measured the ramp against both; these ten pairs are
+  // that measurement made standing.
+  ...CHART_TOKENS.flatMap((chart) => [
+    {
+      label: `${chart.replace("--", "")} fill on a card`,
+      foreground: chart,
+      background: "--card",
+      minimum: AA_NON_TEXT,
+    },
+    {
+      label: `${chart.replace("--", "")} fill on the page`,
+      foreground: chart,
+      background: "--background",
+      minimum: AA_NON_TEXT,
+    },
+  ]),
 ];
 
 /**

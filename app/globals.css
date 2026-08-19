@@ -75,10 +75,12 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  /* Light-mode counterpart of the dark grid stroke (#63). Light mode is out
-     of scope for the re-skin, but leaving the var undefined here would make
-     `stroke-(--chart-grid)` resolve to nothing outside `.dark`. */
+  /* Light-mode counterparts of the dark grid stroke (#63) and sheet scrim
+     (#67). Light mode is out of scope for the re-skin, but leaving these
+     undefined here would make `stroke-(--chart-grid)` and `bg-(--overlay)`
+     resolve to nothing outside `.dark`. */
   --chart-grid: oklch(0 0 0 / 10%);
+  --overlay: oklch(0 0 0 / 50%);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -178,6 +180,19 @@
        louder than `--border`: a card edge is decorative, a grid line is
        something a reader is meant to follow across a chart. */
   --chart-grid: oklch(1 0 0 / 10%);
+  /* The scrim behind a `Sheet` (issue #67). `sheet.tsx` hardcoded
+     `bg-black/10`, which no token could reach and which barely registers on a
+     0.115 page: it drops the content behind it to 0.79x luminance, so the chat
+     panel opened with no sense of a layer above the page. At 50% black the
+     page falls to 0.61x, a card to 0.46x and text to 0.21x, while the panel
+     itself stays at `--popover` (0.225) — the separation comes from the ground
+     dropping, not from the panel rising, which is the same lightness-ladder
+     move the rest of the palette makes.
+
+     Black rather than `--background` at some alpha: `--background` IS the page,
+     so scrimming with it dims the content but leaves the page itself untouched,
+     and the panel gains nothing to stand out from. */
+  --overlay: oklch(0 0 0 / 50%);
   /* Unused — the app has no sidebar (map #59 rules a nav restructure out of
        scope). Kept in step with the ladder so they aren't a stale trap. */
   --sidebar: oklch(0.185 0.008 240);
