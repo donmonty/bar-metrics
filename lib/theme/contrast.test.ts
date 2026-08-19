@@ -6,8 +6,8 @@ import {
   parseOklch,
   tokenContrast,
 } from "./contrast";
-import { CONTRAST_PAIRS, KNOWN_FAILURES } from "./contrast-pairs";
-import { activeTokens, token } from "./tokens";
+import { CONTRAST_PAIRS, KNOWN_FAILURES, scorePair } from "./contrast-pairs";
+import { activeTokens } from "./tokens";
 
 describe("oklch conversion", () => {
   it("maps the achromatic extremes to black and white", () => {
@@ -57,6 +57,30 @@ describe("contrast ratio", () => {
     expect(composited).toBeLessThan(2);
     expect(opaque).toBeGreaterThan(15);
   });
+
+  it("scores a washed background on the composite, not the token", () => {
+    // The user chat bubble (#68): `bg-primary/20` over the well. Text on the
+    // wash keeps almost all the contrast it had on the well; text on solid
+    // orange has nearly none. Scoring the wash as if it were the token would
+    // condemn a bubble that is in fact perfectly legible.
+    const white = "oklch(0.985 0 0)";
+    const wash = tokenContrast(white, "oklch(0.678 0.208 38)", {
+      alpha: 0.2,
+      over: "oklch(0.185 0.008 240)",
+    });
+    const solid = tokenContrast(white, "oklch(0.678 0.208 38)");
+    expect(wash).toBeGreaterThan(10);
+    expect(solid).toBeLessThan(4.5);
+  });
+
+  it("rejects a wash whose base is translucent, rather than guessing", () => {
+    expect(() =>
+      tokenContrast("oklch(0.985 0 0)", "oklch(0.678 0.208 38)", {
+        alpha: 0.2,
+        over: "oklch(1 0 0 / 8%)",
+      }),
+    ).toThrow(/Wash base must be opaque/);
+  });
 });
 
 describe("app/globals.css meets WCAG AA", () => {
@@ -71,10 +95,7 @@ describe("app/globals.css meets WCAG AA", () => {
       // other way round so that fixing the palette turns this test red and
       // forces the entry out of KNOWN_FAILURES.
       it(`${name} — known failure, ${known}`, () => {
-        const ratio = tokenContrast(
-          token(tokens, pair.foreground),
-          token(tokens, pair.background),
-        );
+        const ratio = scorePair(tokens, pair);
         expect(
           ratio,
           `${pair.label} now passes — remove it from KNOWN_FAILURES`,
@@ -84,13 +105,13 @@ describe("app/globals.css meets WCAG AA", () => {
     }
 
     it(name, () => {
-      const ratio = tokenContrast(
-        token(tokens, pair.foreground),
-        token(tokens, pair.background),
-      );
+      const ratio = scorePair(tokens, pair);
+      const ground = pair.wash
+        ? `${pair.background}/${pair.wash.alpha * 100} over ${pair.wash.over}`
+        : pair.background;
       expect(
         ratio,
-        `${pair.foreground} on ${pair.background} is ${ratio.toFixed(2)}:1`,
+        `${pair.foreground} on ${ground} is ${ratio.toFixed(2)}:1`,
       ).toBeGreaterThanOrEqual(pair.minimum);
     });
   }

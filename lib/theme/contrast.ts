@@ -106,17 +106,52 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 }
 
 /**
+ * A background that is not a token but a translucent WASH of one over another
+ * — what a Tailwind `bg-primary/20` utility renders as. Issue #68's user chat
+ * bubble is the first of these: the accent at a fraction of its weight over
+ * the surface behind it, rather than a token of its own.
+ */
+export type Wash = { alpha: number; over: string };
+
+/**
  * Contrast between two oklch token values. A translucent foreground (the
  * `oklch(... / 10%)` border tokens) is composited over the background first,
  * since that is the color a reader actually sees.
+ *
+ * `wash` does the same on the other side: the background is then `background`
+ * at `wash.alpha` over the opaque `wash.over`, which is the only way to score
+ * text sitting on a `bg-<token>/<alpha>` surface.
  */
-export function tokenContrast(foreground: string, background: string): number {
+export function tokenContrast(
+  foreground: string,
+  background: string,
+  wash?: Wash,
+): number {
   const fg = parseOklch(foreground);
   const bg = parseOklch(background);
-  if (bg.alpha !== 1) {
-    throw new Error(`Background token must be opaque, got: ${background}`);
+
+  let bgRgb: Rgb;
+  if (wash) {
+    const base = parseOklch(wash.over);
+    if (base.alpha !== 1) {
+      throw new Error(`Wash base must be opaque, got: ${wash.over}`);
+    }
+    // A wash of an already-translucent token would need both alphas
+    // multiplied out; nothing renders that, so it is rejected rather than
+    // silently scored as if the token were opaque.
+    if (bg.alpha !== 1) {
+      throw new Error(
+        `Washed background token must be opaque, got: ${background}`,
+      );
+    }
+    bgRgb = compositeOver(oklchToRgb(bg), wash.alpha, oklchToRgb(base));
+  } else {
+    if (bg.alpha !== 1) {
+      throw new Error(`Background token must be opaque, got: ${background}`);
+    }
+    bgRgb = oklchToRgb(bg);
   }
-  const bgRgb = oklchToRgb(bg);
+
   const fgRgb =
     fg.alpha === 1
       ? oklchToRgb(fg)
