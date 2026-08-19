@@ -19,8 +19,8 @@ const GLOBALS_CSS = resolve(
 export type TokenSet = Record<string, string>;
 
 /**
- * Pull the custom properties out of one top-level rule, e.g. `:root` or
- * `.dark`. Nested blocks aren't handled — the theme blocks are flat.
+ * Pull the custom properties out of one top-level rule. Nested blocks aren't
+ * handled — the theme block is flat.
  */
 function extractBlock(css: string, selector: string): TokenSet | null {
   const start = css.indexOf(`${selector} {`);
@@ -40,19 +40,32 @@ function extractBlock(css: string, selector: string): TokenSet | null {
 /**
  * The tokens in effect for the theme the app renders in.
  *
- * `app/layout.tsx` hard-codes `class="dark"` on `<html>`, so `.dark` values
- * win wherever they exist and `:root` supplies the rest. Once the dark values
- * move into `:root` and `.dark` is deleted (issue #60), this keeps working —
- * the `.dark` layer is simply absent.
+ * Since issue #71 that is simply `:root`: the palette is dark-only, so the
+ * `.dark` block was folded into `:root` and deleted. `app/layout.tsx` still
+ * hard-codes `class="dark"` on `<html>` — the `dark:` variant and
+ * `chart.tsx`'s `.dark [data-chart=…]` rules both need it — but no token
+ * depends on it any more.
+ *
+ * A reappearing `.dark` block is therefore a regression, not an extra layer to
+ * merge: everything this harness asserts lives in `:root`, so silently reading
+ * only `:root` would let a second palette ship unscored. Fail loudly instead.
  */
 export function activeTokens(
   css = readFileSync(GLOBALS_CSS, "utf8"),
 ): TokenSet {
+  if (extractBlock(css, ".dark")) {
+    throw new Error(
+      "app/globals.css has a `.dark` block again — the palette is dark-only " +
+        "and lives in `:root` (issue #71). Fold it back in, or teach this " +
+        "function which block wins before the contrast checks can be trusted.",
+    );
+  }
+
   const root = extractBlock(css, ":root");
   if (!root) {
     throw new Error("No :root block found in app/globals.css");
   }
-  return { ...root, ...(extractBlock(css, ".dark") ?? {}) };
+  return root;
 }
 
 /** Look up a token, failing loudly rather than silently skipping a check. */

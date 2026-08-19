@@ -1,5 +1,20 @@
 "use client"
 
+/**
+ * shadcn's sheet primitives, with ONE deliberate edit for the dark re-skin
+ * (issue #67, map #59). A `shadcn add sheet` restores the registry file
+ * wholesale — re-apply the edit if that happens.
+ *
+ * 1. `SheetOverlay`'s scrim is `bg-(--overlay)`, not the registry's hardcoded
+ *    `bg-black/10`. 10% black is barely visible on a 0.115 page — the chat
+ *    panel opened with no sense of a layer above the page. `--overlay` is 50%
+ *    black, which drops the page to 0.61x luminance so the panel separates by
+ *    the ground falling rather than the panel rising. The hardcoded value was
+ *    also unreachable from tokens, the same defect as #66's ring.
+ *
+ * The palette itself, and the full shadcn guard, live in `app/globals.css`.
+ */
+
 import * as React from "react"
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
 

@@ -6,6 +6,14 @@
  * its only call site; they moved here because every chart already imports this
  * file, so the doc stays in the path of anyone writing one.
  *
+ * This file is hand-written and `shadcn` never touches it — which is exactly
+ * why the conventions live here rather than in `components/ui/chart.tsx`. The
+ * flip side is that a `shadcn add chart` can restore the registry chart file
+ * and leave this doc describing behaviour the code no longer has: conventions
+ * 1 and 2 below depend on two deliberate edits in `components/ui/chart.tsx`
+ * (the `--chart-grid` grid stroke and the `--popover` tooltip surface), which
+ * that file's header names. See the shadcn guard in `app/globals.css`.
+ *
  * 1. Theming: build on shadcn's `ChartContainer` + a `ChartConfig` (see
  *    `components/ui/chart.tsx`). Don't configure Recharts colors/fonts by
  *    hand — `ChartContainer` injects `--color-<key>` CSS vars per series

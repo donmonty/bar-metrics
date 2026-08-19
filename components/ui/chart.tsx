@@ -13,6 +13,15 @@
  *    OVER a card, and `--background` (0.115) is the rung BELOW `--card`
  *    (0.185) in the surface ladder #62 locked — the registry default reads as
  *    a hole punched in the card rather than a surface above it.
+ *
+ * The repo's chart CONVENTIONS — which ramp step a single-series chart takes,
+ * why ranked bars stay flat, the tooltip and empty-state contracts — are not
+ * here: they live in `components/charts/chart-layout.ts` (issue #70), which is
+ * a hand-written file `shadcn add` never touches. Restoring this file from the
+ * registry silently breaks conventions 1 and 2 while that doc still describes
+ * them, so re-read it after any `shadcn` run.
+ *
+ * The palette itself, and the full shadcn guard, live in `app/globals.css`.
  */
 
 import * as React from "react";
