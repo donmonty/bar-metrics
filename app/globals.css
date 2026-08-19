@@ -107,7 +107,10 @@
           0.115 page / 0.185 card / 0.225 popover. The old palette put card at
           0.205 against a 0.145 page, which is why cards read as invisible.
           `--border` is correspondingly quiet (8%); raising it re-adds an edge
-          the ladder was chosen to do without.
+          the ladder was chosen to do without. Since #66 it is the app's ONLY
+          edge: `Card`, `PopoverContent` and `SelectContent` used to bypass it
+          with a hardcoded `ring-1 ring-foreground/10` and now use
+          `ring-1 ring-border`.
 
        2. Surfaces carry a faint COOL chroma (0.008 at hue 240) while all
           foregrounds stay chroma-0. This is the reference's own move: the

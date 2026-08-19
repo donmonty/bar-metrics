@@ -78,6 +78,14 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   // deliberately NOT asserted: it draws card edges, the header rule and table
   // dividers, all decorative, and holding it to 3:1 would demand a near-white
   // hairline on every card. That distinction is issue #62's call.
+  //
+  // Since issue #66 that list is literal, not aspirational: `Card`,
+  // `PopoverContent` and `SelectContent` used to draw their own edge with a
+  // hardcoded `ring-1 ring-foreground/10` (10% white, 1.29:1 on `--card`) that
+  // no token could reach. They now carry `ring-1 ring-border`, so every edge in
+  // the app resolves here and the ladder stays the only real separator. Do not
+  // add a `--border` pair to "fix" the faint result — 1.23:1 is the intended
+  // look, and asserting 3:1 would force back the visible edge #62 rejected.
   {
     label: "input boundary on a card",
     foreground: "--input",
