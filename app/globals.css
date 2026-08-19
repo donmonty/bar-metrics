@@ -75,6 +75,10 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  /* Light-mode counterpart of the dark grid stroke (#63). Light mode is out
+     of scope for the re-skin, but leaving the var undefined here would make
+     `stroke-(--chart-grid)` resolve to nothing outside `.dark`. */
+  --chart-grid: oklch(0 0 0 / 10%);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -140,13 +144,37 @@
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 36%);
   --ring: oklch(0.678 0.208 38);
-  /* Still the old greyscale ramp — the orange ramp is issue #63, and
-       --chart-3/4/5 sit in KNOWN_FAILURES until it lands. */
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* The Ember ramp (issue #63). Single hue 38, five steps separated by
+       LIGHTNESS, ascending — 3.65 / 4.62 / 5.88 / 8.07 / 11.33 against
+       `--card`, and every step also clears 3:1 against `--background` for
+       charts rendered outside a card.
+
+       The floor is real and was measured, not guessed: a chart fill is a
+       graphical object, so it owes 3:1 on the card, and for this hue that
+       puts a LIGHTNESS FLOOR at roughly L 0.51 — oklch(0.50 0.10 38) scores
+       2.98, oklch(0.55 0.10 38) scores 3.67. Chroma barely moves the number.
+       So there is no room below the accent to fade a series out into; the
+       ramp can only run upward. Do not "balance" this by darkening step 1.
+
+       Chroma stays under the sRGB ceiling for each step's lightness at this
+       hue (L 0.555 → 0.234, L 0.755 → 0.148, L 0.845 → 0.085). Over the
+       ceiling the browser silently clamps the step into a duller one.
+
+       `--chart-3` IS the accent, and it is the step a single-series chart
+       uses (see `components/charts/sales-trend-chart.tsx`) — the ramp is an
+       ordered lightness scale, so the brand orange sits in its middle rather
+       than at either end. Ranked bars deliberately stay flat: #63 decided a
+       bar's colour should not encode its rank when its length already does. */
+  --chart-1: oklch(0.555 0.16 38);
+  --chart-2: oklch(0.615 0.185 38);
+  --chart-3: oklch(0.678 0.208 38);
+  --chart-4: oklch(0.755 0.145 38);
+  --chart-5: oklch(0.845 0.08 38);
+  /* Grid lines in `ChartContainer`. Was `--border` at 50% — 4% white, which
+       is invisible on a 0.185 card. #63 raised it to 10%, deliberately
+       louder than `--border`: a card edge is decorative, a grid line is
+       something a reader is meant to follow across a chart. */
+  --chart-grid: oklch(1 0 0 / 10%);
   /* Unused — the app has no sidebar (map #59 rules a nav restructure out of
        scope). Kept in step with the ladder so they aren't a stale trap. */
   --sidebar: oklch(0.185 0.008 240);

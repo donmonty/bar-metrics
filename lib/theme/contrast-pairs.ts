@@ -121,9 +121,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
  * here — a pair leaves the list by passing, never by being deleted.
  */
 export const KNOWN_FAILURES: Record<string, string> = {
-  // The shipped dark ramp is shadcn's neutral greys, which collapse into the
-  // card surface. The orange ramp that replaces them is issue #63.
-  "chart-3 fill on a card": "#63 — orange chart ramp",
-  "chart-4 fill on a card": "#63 — orange chart ramp",
-  "chart-5 fill on a card": "#63 — orange chart ramp",
+  // Empty, and worth keeping empty. The three chart-ramp entries that lived
+  // here left by passing: issue #63's Ember ramp scores 3.65 / 4.62 / 5.88 /
+  // 8.07 / 11.33 on a card. A pair leaves this list by passing, never by
+  // being deleted.
 };
