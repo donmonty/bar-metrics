@@ -1,6 +1,6 @@
 /**
  * `MermaChart` (issue #17) — the dashboard's signature chart. Follows #23's
- * conventions (see `components/charts/ranked-bar-chart.tsx`'s header):
+ * conventions (see `components/charts/chart-layout.ts`'s header):
  * `ChartContainer`/`ChartConfig` theming, `ChartTooltip`/`ChartTooltipContent`
  * for the tooltip, the `data`+`emptyMessage` empty-state contract, height
  * sized via `getChartHeightPx` (chart-styling fix — a fixed height made
@@ -9,7 +9,7 @@
  * Pure/props-only — no data fetching; `app/dashboard/merma/page.tsx` fetches
  * via `getMermaOverview` and passes the shaped data down.
  *
- * Adds one thing the #23 POC didn't need: a top-N cap with an expansion
+ * Adds one thing #23's conventions don't cover: a top-N cap with an expansion
  * control, since merma's Ingrediente list can run long and the chart must
  * stay readable by default.
  */
