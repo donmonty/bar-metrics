@@ -91,18 +91,38 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   },
   // Orange carries meaning as text, not just as a button fill (issue #62
   // gave the accent to headline numbers), so it is held to the text floor.
+  //
+  // Both grounds, for the reason #67 gave when it graduated the chart fills:
+  // `StockValueSummary` — the only component that spends the accent this way —
+  // renders inside a `Card` on the landing page and straight on the page at
+  // `/dashboard/stock-value`, and the PAGE is the ground this file used to
+  // miss. 5.88:1 on a card, 6.44:1 on the page.
   {
     label: "orange as a number on a card",
     foreground: "--primary",
     background: "--card",
     minimum: AA_TEXT,
   },
+  {
+    label: "orange as a number on the page",
+    foreground: "--primary",
+    background: "--background",
+    minimum: AA_TEXT,
+  },
   // WCAG 1.4.11 asks 3:1 of anything identifying a CONTROL's boundary.
   // `--input` is exactly that — `Input`, `SelectTrigger`, and in dark mode the
   // `outline` Button, which switches to `dark:border-input`. `--border` is
-  // deliberately NOT asserted: it draws card edges, the header rule and table
-  // dividers, all decorative, and holding it to 3:1 would demand a near-white
-  // hairline on every card. That distinction is issue #62's call.
+  // deliberately NOT asserted: it draws the app's edges — cards, popovers,
+  // select menus — which are decorative, and holding it to 3:1 would demand a
+  // near-white hairline on every card. That distinction is issue #62's call.
+  //
+  // Since issue #69 that list no longer includes the header rule and the table
+  // dividers: those moved to `--rule` at 15%, because "quiet enough to keep
+  // the ladder edgeless" and "loud enough to divide content" cannot be the
+  // same number. `--rule` is unasserted for the SAME reason `--border` is —
+  // it identifies no control, and #69 measured the 3:1 floor on these grounds
+  // at ~34% white, which is `--input`'s weight. Splitting the token moved the
+  // rules where a reader can see them; it did not create a WCAG obligation.
   //
   // Since issue #66 that list is literal, not aspirational: `Card`,
   // `PopoverContent` and `SelectContent` used to draw their own edge with a

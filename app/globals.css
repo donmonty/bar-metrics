@@ -23,6 +23,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-rule: var(--rule);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -75,12 +76,14 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  /* Light-mode counterparts of the dark grid stroke (#63) and sheet scrim
-     (#67). Light mode is out of scope for the re-skin, but leaving these
-     undefined here would make `stroke-(--chart-grid)` and `bg-(--overlay)`
-     resolve to nothing outside `.dark`. */
+  /* Light-mode counterparts of the dark grid stroke (#63), sheet scrim
+     (#67) and structural rule (#69). Light mode is out of scope for the
+     re-skin, but leaving these undefined here would make
+     `stroke-(--chart-grid)`, `bg-(--overlay)` and `border-rule` resolve to
+     nothing outside `.dark`. */
   --chart-grid: oklch(0 0 0 / 10%);
   --overlay: oklch(0 0 0 / 50%);
+  --rule: oklch(0 0 0 / 15%);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -147,6 +150,31 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 8%);
+  /* Structural separators (issue #69) — the dashboard header rule, the table
+     head rule and row dividers, and the stock-value breakdown's row rules.
+     All of those drew on `--border` and landed near 1.2x their ground, which
+     is the right weight for a card EDGE and the wrong weight for a rule a
+     reader is meant to read content across.
+
+     Same split #63 made for `--chart-grid`, and for the same reason: one
+     token cannot be both quiet enough to keep the ladder edgeless and loud
+     enough to divide content. `--border` stays at 8% with #62's meaning
+     intact — do NOT raise it to close this gap, per the note above.
+
+     15% puts every rule at roughly 1.5x its ground (1.44 on `--background`,
+     1.54 on `--card`, 1.59 on `--popover`, 1.62 on `--muted`) against
+     `--border`'s 1.16-1.25 — visible as a division, still nothing like an
+     outline. It sits deliberately above `--chart-grid`'s 10%: a chart's
+     lattice is many lines that must not compete with the data, a rule is one
+     line whose whole job is to separate.
+
+     NOT asserted in `CONTRAST_PAIRS`, by #62's decorative-vs-structural test:
+     that test asks whether the token draws a CONTROL's boundary (WCAG 1.4.11),
+     which is why `--input` is asserted and `--border` is not. A table rule
+     draws no control, and the rows stay legible from spacing alone. The floor
+     is not a near-miss either — 3:1 on these grounds needs ~34% white, which
+     is `--input`'s weight, i.e. exactly the hairline outline #62 rejected. */
+  --rule: oklch(1 0 0 / 15%);
   --input: oklch(1 0 0 / 36%);
   --ring: oklch(0.678 0.208 38);
   /* The Ember ramp (issue #63). Single hue 38, five steps separated by

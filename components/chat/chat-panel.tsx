@@ -38,10 +38,10 @@ const markdownComponents = {
     <table className="my-1 w-full border-collapse text-left" {...props} />
   ),
   th: (props: ComponentPropsWithoutRef<"th">) => (
-    <th className="border-b px-2 py-1 font-medium" {...props} />
+    <th className="border-b border-rule px-2 py-1 font-medium" {...props} />
   ),
   td: (props: ComponentPropsWithoutRef<"td">) => (
-    <td className="border-b px-2 py-1" {...props} />
+    <td className="border-b border-rule px-2 py-1" {...props} />
   ),
   ul: (props: ComponentPropsWithoutRef<"ul">) => (
     <ul className="list-disc space-y-1 pl-5" {...props} />
@@ -152,7 +152,7 @@ export function ChatPanel({
 
         <form
           onSubmit={handleSubmit}
-          className="flex items-center gap-2 border-t p-4"
+          className="flex items-center gap-2 border-t border-rule p-4"
         >
           <Input
             value={input}

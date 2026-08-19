@@ -15,7 +15,9 @@ export function DashboardHeader({
   sucursales: SucursalSummary[];
 }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
+    // The header rule is structural — it separates the controls from the
+    // page — so it takes `--rule`, not the decorative `--border` (issue #69).
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-rule pb-4">
       <h1 className="text-xl font-semibold">Dashboard</h1>
       <div className="flex flex-wrap items-center gap-3">
         <DateRangeControl />
