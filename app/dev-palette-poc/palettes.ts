@@ -106,7 +106,7 @@ export const CANDIDATES: Candidate[] = [
       "Lightness alone: a deep ground with cards genuinely lifted off it, edges nearly absent. Orange reaches the CTA, the ring, and the one number each card is about.",
     axes: {
       edge: "none to speak of — 8% border; the ladder carries it",
-      accent: "medium — + the headline number on each card (orange @ L 0.755)",
+      accent: "medium — + the headline number on each card (reference orange)",
       ground: "deep — 0.115 ground, ladder climbs to 0.265",
     },
     accentBreadth: "medium",
@@ -123,11 +123,15 @@ export const CANDIDATES: Candidate[] = [
       "--border": "oklch(1 0 0 / 8%)",
       // The deepest ground needs the most: 36% to clear 3:1 on the card.
       "--input": "oklch(1 0 0 / 36%)",
-      // Brightest of the three: this candidate spends orange as a *number*
-      // colour, which is body text and has to clear 4.5:1 on the card.
-      "--primary": `oklch(0.755 0.175 ${BRAND_HUE + 4})`,
+      // The reference orange verbatim. An earlier draft lifted this to
+      // L 0.755 for orange-as-a-number headroom; that pushed chroma past the
+      // sRGB ceiling (0.153 at that lightness), so the browser clamped it and
+      // the accent read visibly weaker than C's for no benefit — the
+      // reference orange already scores 5.86:1 as a number on this card.
+      // `?accent=bright` still shows that draft, unclamped.
+      "--primary": REFERENCE_ORANGE,
       "--primary-foreground": "oklch(0.16 0 0)",
-      "--ring": `oklch(0.755 0.175 ${BRAND_HUE + 4})`,
+      "--ring": REFERENCE_ORANGE,
     },
   },
   {
@@ -169,4 +173,73 @@ export function candidateFor(key: string | undefined): Candidate {
   return (
     CANDIDATES.find((c) => c.key === (key ?? DEFAULT_VARIANT)) ?? CANDIDATES[0]!
   );
+}
+
+/**
+ * Accent overrides, switchable independently of the candidate (`?accent=`).
+ *
+ * Added after the first review round: B's orange read as visibly weaker than
+ * C's, and the cause was a gamut ceiling, not a design choice. In the orange
+ * region the largest chroma sRGB can display falls off fast with lightness —
+ * at hue ~40 it is 0.214 at L 0.678 but only 0.153 at L 0.755. B was lifted
+ * to L 0.755 to give orange-as-a-number headroom over 4.5:1, and paid ~26% of
+ * its chroma for it. The headroom turned out to be unnecessary: the reference
+ * orange scores 5.86:1 as a number on B's card, well clear of AA.
+ *
+ * Every chroma here sits ON or under its ceiling, so nothing gets silently
+ * clamped by the browser into a colour the token doesn't name.
+ */
+export type Accent = {
+  key: string;
+  name: string;
+  note: string;
+  primary: string;
+  /** Foreground that keeps the button label over 4.5:1. */
+  primaryForeground: string;
+};
+
+export const ACCENTS: Accent[] = [
+  {
+    key: "reference",
+    name: "Reference",
+    note: "The RentEngine orange verbatim — the most intense the family gets in sRGB (ceiling 0.214 at this lightness).",
+    primary: "oklch(0.678 0.208 38)",
+    primaryForeground: "oklch(0.14 0 0)",
+  },
+  {
+    key: "lifted",
+    name: "Lifted",
+    note: "A touch brighter for a deep ground, sitting exactly on the gamut ceiling (0.195 at L 0.70). Nothing is clamped.",
+    primary: "oklch(0.70 0.195 38)",
+    primaryForeground: "oklch(0.15 0 0)",
+  },
+  {
+    key: "bright",
+    name: "Bright",
+    note: "What B actually rendered before — L 0.755 forces chroma down to 0.153. The honest, unclamped value of the old token.",
+    primary: "oklch(0.755 0.15 42)",
+    primaryForeground: "oklch(0.16 0 0)",
+  },
+];
+
+export function accentFor(key: string | undefined): Accent | null {
+  if (!key) return null;
+  return ACCENTS.find((a) => a.key === key) ?? null;
+}
+
+/** Apply an accent override on top of a candidate's tokens. */
+export function withAccent(
+  candidate: Candidate,
+  accent: Accent | null,
+): Candidate {
+  if (!accent) return candidate;
+  return {
+    ...candidate,
+    tokens: {
+      ...candidate.tokens,
+      "--primary": accent.primary,
+      "--primary-foreground": accent.primaryForeground,
+      "--ring": accent.primary,
+    },
+  };
 }

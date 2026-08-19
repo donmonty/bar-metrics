@@ -16,16 +16,17 @@ import { Suspense } from "react";
 
 import { ContrastReadout } from "./contrast-readout";
 import { Gallery } from "./gallery";
-import { candidateFor } from "./palettes";
+import { accentFor, candidateFor, withAccent } from "./palettes";
 import { VariantSwitcher } from "./variant-switcher";
 
 export default async function PalettePocPage({
   searchParams,
 }: {
-  searchParams: Promise<{ variant?: string }>;
+  searchParams: Promise<{ variant?: string; accent?: string }>;
 }) {
-  const { variant } = await searchParams;
-  const candidate = candidateFor(variant);
+  const { variant, accent } = await searchParams;
+  const chosenAccent = accentFor(accent);
+  const candidate = withAccent(candidateFor(variant), chosenAccent);
 
   return (
     <div
@@ -43,6 +44,14 @@ export default async function PalettePocPage({
           <p className="max-w-2xl text-sm text-muted-foreground">
             {candidate.thesis}
           </p>
+          {chosenAccent && (
+            <p className="max-w-2xl border-l-2 border-l-primary pl-3 text-sm">
+              <span className="font-medium">
+                Accent override — {chosenAccent.name}:
+              </span>{" "}
+              <span className="text-muted-foreground">{chosenAccent.note}</span>
+            </p>
+          )}
           <dl className="grid gap-x-4 gap-y-1 pt-2 text-xs sm:grid-cols-[auto_1fr]">
             {(
               [
@@ -74,7 +83,7 @@ export default async function PalettePocPage({
       </div>
 
       <Suspense fallback={null}>
-        <VariantSwitcher current={candidate.key} />
+        <VariantSwitcher current={candidate.key} accent={chosenAccent?.key} />
       </Suspense>
     </div>
   );
