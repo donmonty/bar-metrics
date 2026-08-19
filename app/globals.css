@@ -48,85 +48,70 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* The dark-and-orange identity (issue #62, map #59) — the app's ONLY token
+   block. Slice 5 (#71) folded the old `.dark` block into `:root` and deleted
+   the light greyscale that used to live here: light mode is out of scope for
+   this app (map #59), `app/layout.tsx` hard-codes `class="dark"` on `<html>`,
+   and a second palette nothing renders is a palette nothing holds to AA.
+
+   `color-scheme: dark` tells the UA to render its own chrome — form controls,
+   scrollbars, the canvas behind the page — in dark. Without it a near-black
+   page still gets a white scrollbar and light-mode date pickers.
+
+   `class="dark"` STAYS on `<html>` even though no `.dark` block remains. The
+   `dark:` variant is still used (`dark:border-input` on the outline Button),
+   and `components/ui/chart.tsx` emits `.dark [data-chart=…]` rules for any
+   `ChartConfig` entry with a `theme` key. Removing the class silently drops
+   both.
+
+   These values are NOT shadcn registry output — the neutral ladder and the
+   accent were pinned on a prototype that rendered candidate palettes on the
+   real components, and every pair below is held to WCAG AA by
+   `lib/theme/contrast.test.ts`. Re-run `npm run check:contrast` after touching
+   anything here; do not eyeball it.
+
+   ┌─ shadcn guard (issue #71) ───────────────────────────────────────────────
+   │ `shadcn init` REWRITES this block wholesale and has no opt-out flag
+   │ (issue #60 confirmed). Running it restores the greyscale registry palette
+   │ and throws away everything below plus every comment explaining it.
+   │
+   │ `shadcn add <component>` is no longer safe either. Five files in
+   │ `components/ui/` carry deliberate re-skin edits and each says so at the
+   │ top: `card.tsx`, `chart.tsx`, `popover.tsx`, `select.tsx`, `sheet.tsx`.
+   │ Adding a component that overlaps one of them restores the registry file
+   │ and drops the edit.
+   │
+   │ There is no CI in this repo, so nothing checks this for you. If you do
+   │ run either command: diff the result, re-apply the edits the file headers
+   │ name, and run `npm run check:contrast` before committing.
+   └──────────────────────────────────────────────────────────────────────────
+
+   Candidates and the reasoning: issue #62. Full candidate set preserved on
+   branch `prototype/62-palette-candidates`.
+
+   Three things here are deliberate and easy to "fix" by mistake:
+
+   1. The surface ladder separates by LIGHTNESS, not by a visible edge —
+      0.115 page / 0.185 card / 0.225 popover. The old palette put card at
+      0.205 against a 0.145 page, which is why cards read as invisible.
+      `--border` is correspondingly quiet (8%); raising it re-adds an edge
+      the ladder was chosen to do without. Since #66 it is the app's ONLY
+      edge: `Card`, `PopoverContent` and `SelectContent` used to bypass it
+      with a hardcoded `ring-1 ring-foreground/10` and now use
+      `ring-1 ring-border`.
+
+   2. Surfaces carry a faint COOL chroma (0.008 at hue 240) while all
+      foregrounds stay chroma-0. This is the reference's own move: the
+      greys lean away from the orange, which makes the accent read warmer
+      without spending chroma on it. It shifts every contrast ratio by
+      less than 0.03.
+
+   3. `--input` is 36% white, not shadcn's 15%. It draws the boundary of
+      `Input`, `SelectTrigger` and — in dark mode — the `outline` Button
+      (`dark:border-input`), so WCAG 1.4.11 asks 3:1 of it. At 15% it
+      scores 1.4:1. `--border` is decorative and carries no such floor. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  /* Contrast is no longer judged by hand: `npm run check:contrast` scores
-       every asserted pair in this file, and lib/theme/contrast.test.ts holds
-       the palette to WCAG AA on every run. chart-1 was darkened from
-       oklch(0.87 0 0) for the thin bar fills charts use it for. */
-  --chart-1: oklch(0.45 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  /* Light-mode counterparts of the dark grid stroke (#63), sheet scrim
-     (#67) and structural rule (#69). Light mode is out of scope for the
-     re-skin, but leaving these undefined here would make
-     `stroke-(--chart-grid)`, `bg-(--overlay)` and `border-rule` resolve to
-     nothing outside `.dark`. */
-  --chart-grid: oklch(0 0 0 / 10%);
-  --overlay: oklch(0 0 0 / 50%);
-  --rule: oklch(0 0 0 / 15%);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  /* The dark-and-orange identity (issue #62, map #59). These values are
-       NOT shadcn registry output any more — the neutral ladder and the accent
-       were pinned on a prototype that rendered candidate palettes on the real
-       components, and every pair below is held to WCAG AA by
-       `lib/theme/contrast.test.ts`. Re-run `npm run check:contrast` after
-       touching anything here; do not eyeball it.
-
-       Candidates and the reasoning: issue #62. Full candidate set preserved
-       on branch `prototype/62-palette-candidates`.
-
-       Three things here are deliberate and easy to "fix" by mistake:
-
-       1. The surface ladder separates by LIGHTNESS, not by a visible edge —
-          0.115 page / 0.185 card / 0.225 popover. The old palette put card at
-          0.205 against a 0.145 page, which is why cards read as invisible.
-          `--border` is correspondingly quiet (8%); raising it re-adds an edge
-          the ladder was chosen to do without. Since #66 it is the app's ONLY
-          edge: `Card`, `PopoverContent` and `SelectContent` used to bypass it
-          with a hardcoded `ring-1 ring-foreground/10` and now use
-          `ring-1 ring-border`.
-
-       2. Surfaces carry a faint COOL chroma (0.008 at hue 240) while all
-          foregrounds stay chroma-0. This is the reference's own move: the
-          greys lean away from the orange, which makes the accent read warmer
-          without spending chroma on it. It shifts every contrast ratio by
-          less than 0.03.
-
-       3. `--input` is 36% white, not shadcn's 15%. It draws the boundary of
-          `Input`, `SelectTrigger` and — in dark mode — the `outline` Button
-          (`dark:border-input`), so WCAG 1.4.11 asks 3:1 of it. At 15% it
-          scores 1.4:1. `--border` is decorative and carries no such floor. */
+  color-scheme: dark;
   --background: oklch(0.115 0.008 240);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.185 0.008 240);
@@ -134,12 +119,12 @@
   --popover: oklch(0.225 0.008 240);
   --popover-foreground: oklch(0.985 0 0);
   /* The reference orange verbatim, oklch(0.678 0.208 38). Chroma sits just
-       under the sRGB ceiling for this lightness (0.214); pushing lightness up
-       collapses that ceiling fast — at L 0.755 it is only 0.153 — so a
-       "brighter" orange here silently gets clamped into a weaker one.
-       The label is near-black because white scores 3.17:1 on this orange and
-       only clears AA below L 0.585, by which point it is no longer this
-       colour. The reference's own white-on-orange CTA fails AA. */
+     under the sRGB ceiling for this lightness (0.214); pushing lightness up
+     collapses that ceiling fast — at L 0.755 it is only 0.153 — so a
+     "brighter" orange here silently gets clamped into a weaker one.
+     The label is near-black because white scores 3.17:1 on this orange and
+     only clears AA below L 0.585, by which point it is no longer this
+     colour. The reference's own white-on-orange CTA fails AA. */
   --primary: oklch(0.678 0.208 38);
   --primary-foreground: oklch(0.16 0 0);
   --secondary: oklch(0.265 0.008 240);
@@ -178,35 +163,36 @@
   --input: oklch(1 0 0 / 36%);
   --ring: oklch(0.678 0.208 38);
   /* The Ember ramp (issue #63). Single hue 38, five steps separated by
-       LIGHTNESS, ascending — 3.65 / 4.62 / 5.88 / 8.07 / 11.33 against
-       `--card`, and every step also clears 3:1 against `--background` for
-       charts rendered outside a card.
+     LIGHTNESS, ascending — 3.65 / 4.62 / 5.88 / 8.07 / 11.33 against
+     `--card`, and every step also clears 3:1 against `--background` for
+     charts rendered outside a card.
 
-       The floor is real and was measured, not guessed: a chart fill is a
-       graphical object, so it owes 3:1 on the card, and for this hue that
-       puts a LIGHTNESS FLOOR at roughly L 0.51 — oklch(0.50 0.10 38) scores
-       2.98, oklch(0.55 0.10 38) scores 3.67. Chroma barely moves the number.
-       So there is no room below the accent to fade a series out into; the
-       ramp can only run upward. Do not "balance" this by darkening step 1.
+     The floor is real and was measured, not guessed: a chart fill is a
+     graphical object, so it owes 3:1 on the card, and for this hue that
+     puts a LIGHTNESS FLOOR at roughly L 0.51 — oklch(0.50 0.10 38) scores
+     2.98, oklch(0.55 0.10 38) scores 3.67. Chroma barely moves the number.
+     So there is no room below the accent to fade a series out into; the
+     ramp can only run upward. Do not "balance" this by darkening step 1.
 
-       Chroma stays under the sRGB ceiling for each step's lightness at this
-       hue (L 0.555 → 0.234, L 0.755 → 0.148, L 0.845 → 0.085). Over the
-       ceiling the browser silently clamps the step into a duller one.
+     Chroma stays under the sRGB ceiling for each step's lightness at this
+     hue (L 0.555 → 0.234, L 0.755 → 0.148, L 0.845 → 0.085). Over the
+     ceiling the browser silently clamps the step into a duller one.
 
-       `--chart-3` IS the accent, and it is the step a single-series chart
-       uses (see `components/charts/sales-trend-chart.tsx`) — the ramp is an
-       ordered lightness scale, so the brand orange sits in its middle rather
-       than at either end. Ranked bars deliberately stay flat: #63 decided a
-       bar's colour should not encode its rank when its length already does. */
+     `--chart-3` IS the accent, and it is the step a single-series chart
+     uses (see `components/charts/sales-trend-chart.tsx`) — the ramp is an
+     ordered lightness scale, so the brand orange sits in its middle rather
+     than at either end. Ranked bars deliberately stay flat: #63 decided a
+     bar's colour should not encode its rank when its length already does.
+     The full conventions live in `components/charts/chart-layout.ts`. */
   --chart-1: oklch(0.555 0.16 38);
   --chart-2: oklch(0.615 0.185 38);
   --chart-3: oklch(0.678 0.208 38);
   --chart-4: oklch(0.755 0.145 38);
   --chart-5: oklch(0.845 0.08 38);
   /* Grid lines in `ChartContainer`. Was `--border` at 50% — 4% white, which
-       is invisible on a 0.185 card. #63 raised it to 10%, deliberately
-       louder than `--border`: a card edge is decorative, a grid line is
-       something a reader is meant to follow across a chart. */
+     is invisible on a 0.185 card. #63 raised it to 10%, deliberately louder
+     than `--border`: a card edge is decorative, a grid line is something a
+     reader is meant to follow across a chart. */
   --chart-grid: oklch(1 0 0 / 10%);
   /* The scrim behind a `Sheet` (issue #67). `sheet.tsx` hardcoded
      `bg-black/10`, which no token could reach and which barely registers on a
@@ -221,8 +207,9 @@
      so scrimming with it dims the content but leaves the page itself untouched,
      and the panel gains nothing to stand out from. */
   --overlay: oklch(0 0 0 / 50%);
+  --radius: 0.625rem;
   /* Unused — the app has no sidebar (map #59 rules a nav restructure out of
-       scope). Kept in step with the ladder so they aren't a stale trap. */
+     scope). Kept in step with the ladder so they aren't a stale trap. */
   --sidebar: oklch(0.185 0.008 240);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.678 0.208 38);

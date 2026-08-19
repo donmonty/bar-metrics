@@ -1,5 +1,24 @@
 "use client"
 
+/**
+ * shadcn's select primitives, with ONE deliberate edit for the dark re-skin
+ * (issue #66, map #59), plus one known trap. A `shadcn add select` restores
+ * the registry file wholesale — re-apply the edit if that happens.
+ *
+ * 1. `SelectContent`'s edge is `ring-1 ring-border`, not the registry's
+ *    hardcoded `ring-1 ring-foreground/10`. #66 found this was the app's
+ *    most-seen instance of that hairline, since `Card` renders on only two
+ *    pages. Same edit as `card.tsx` and `popover.tsx`.
+ *
+ * TRAP — `SelectSeparator` has ZERO call sites (inventory in issue #69,
+ * confirmed by #71), so nothing has ever rendered it on this palette. It is a
+ * 1px `bg-border`, i.e. 8% white on a 0.225 popover: a division a reader is
+ * meant to read across, drawn at the decorative card-edge weight. If you ever
+ * use it, give it `bg-rule` (15%, issue #69).
+ *
+ * The palette itself, and the full shadcn guard, live in `app/globals.css`.
+ */
+
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 

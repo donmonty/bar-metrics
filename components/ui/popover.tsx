@@ -1,5 +1,18 @@
 "use client"
 
+/**
+ * shadcn's popover primitives, with ONE deliberate edit for the dark re-skin
+ * (issue #66, map #59). A `shadcn add popover` restores the registry file
+ * wholesale — re-apply the edit if that happens.
+ *
+ * 1. `PopoverContent`'s edge is `ring-1 ring-border`, not the registry's
+ *    hardcoded `ring-1 ring-foreground/10`, so it resolves from the palette
+ *    like every other edge in the app. Same edit as `card.tsx` and
+ *    `select.tsx`.
+ *
+ * The palette itself, and the full shadcn guard, live in `app/globals.css`.
+ */
+
 import * as React from "react"
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 

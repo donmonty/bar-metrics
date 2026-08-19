@@ -1,3 +1,23 @@
+/**
+ * shadcn's card primitives, with ONE deliberate edit for the dark re-skin
+ * (issue #66, map #59), plus one known trap. A `shadcn add card` restores the
+ * registry file wholesale — re-apply the edit if that happens.
+ *
+ * 1. `Card`'s edge is `ring-1 ring-border`, not the registry's hardcoded
+ *    `ring-1 ring-foreground/10`. #66 tokenised it so the app has ONE edge
+ *    system; the value barely moves (1.29:1 -> 1.23:1 on `--card`), the point
+ *    is that `--border` is now reachable from the palette. `PopoverContent`
+ *    and `SelectContent` carry the same edit.
+ *
+ * TRAP — `CardFooter` has ZERO call sites (inventory in issue #69, confirmed
+ * by #71), so nothing has ever rendered it on this palette. It draws its top
+ * edge with a bare `border-t`, which resolves to `--border` at 8% via the
+ * `@layer base` rule in `app/globals.css`. That is the CARD-EDGE weight, and a
+ * footer rule is a structural separator a reader reads across: #69 split those
+ * onto `--rule` at 15%. If you ever use `CardFooter`, give it `border-rule`.
+ *
+ * The palette itself, and the full shadcn guard, live in `app/globals.css`.
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
