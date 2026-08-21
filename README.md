@@ -5,11 +5,9 @@ Postgres (owned for writes by the legacy `api-nubebar-django` app) and surfaces
 metrics — headlined by **merma** (consumption variance) — plus a tool-calling
 chatbot to drill into the data.
 
-<img width="1411" height="989" alt="nubebar dashboard-01" src="https://github.com/user-attachments/assets/ae67f7cf-5627-44e8-9598-174aeaa45248" />
-
-<img width="1411" height="989" alt="nubebar-chatbot" src="https://github.com/user-attachments/assets/bfbe80d1-9700-4d39-a025-6727938b9f42" />
-
-<img width="1411" height="989" alt="nubebar-dashboard-02" src="https://github.com/user-attachments/assets/41e5fb27-1612-4f78-afea-993b5477f311" />
+<img width="1387" height="1014" alt="Screenshot 2026-08-19 at 1 06 32 a m" src="https://github.com/user-attachments/assets/6ee84113-1ec1-483b-9b4d-89056a7c2f8c" />
+<img width="1387" height="1014" alt="Screenshot 2026-08-19 at 1 07 56 a m" src="https://github.com/user-attachments/assets/1b4d091b-2e7c-41f2-9186-19f38a2f2fdb" />
+<img width="1387" height="1014" alt="Screenshot 2026-08-19 at 1 19 45 a m" src="https://github.com/user-attachments/assets/24cad9c9-7698-43f9-8a83-4879d40c5619" />
 
 
 
